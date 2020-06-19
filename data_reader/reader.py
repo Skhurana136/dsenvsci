@@ -83,7 +83,7 @@ def readTecfile (filename):
     return dataPoints, numberOfTimeSteps, Headers, D
 
 #Converting tec data to datafram for heat maps
-def Converttomarr (D):
+def Converttomarr_1581 (D): #converting loaded data to multi-dimensional array (time stepsx51rowsx31columns)
     steps = np.shape(D)[2]
     Headers = np.shape(D)[1]
     size = np.shape(D)[0]
@@ -102,7 +102,7 @@ def Converttomarr (D):
         df [:,:,50-j,:] = df2 [:,:,j,:]
     return df
 
-def RF_Converttomarr (D):
+def Converttomarr_6161 (D): #converting loaded data to multi-dimensional array (timestepsx101rowsx61columns)
     steps = np.shape(D)[2]
     Headers = np.shape(D)[1]
     size = np.shape(D)[0]
