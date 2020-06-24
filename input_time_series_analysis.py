@@ -17,151 +17,40 @@ import os
 
 #Saturated flow regime
 Reg = "Fast"
-directory = r"Z:/Saturated_flow/diffusion_transient/"
-fpre = '/NS-A'
-masterTrial = ['H',37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
-masterHet = [0,0.1,0.1,0.1,1,1,1,10,10,10,0.1,0.1,0.1,1,1,1,10,10,10,0.1,0.1,0.1,1,1,1,10,10,10,0.1,0.1,0.1,1,1,1,5,5,5,10,10,10,5,5,5,5,5,5,5,5,5]
-masterAnis = [1,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10,2,5,10]
-Tforfpre = [Reg+'AR_0', Reg+'AR_1', Reg+'AR_2',Reg+'AR_5']
-fsuf  = r"/"
-gw = 1
-filename = 'model_domain_quad.tec'
-nScenarios = 3
+directory = r"Z:/Saturated_flow/diffusion_transient/time_series_"
+timseries = ["1","2","5"]
+filenames = [directory + t +".csv" for t in timseries] #Setting up file names
 
-#Default:
-Trial = masterTrial
-Het = masterHet
-Anis = masterAnis
+#Load data
+timdata = pd.read_csv(filenames[0], sep = '\t')
+timdata.head()
+print(timdata.shape)
+print(timdata.columns)
 
-#Variations:
-#looking for specific trial scenarios
-notlist = [43, 52]
-indices = [index for index, value in enumerate(masterTrial) if value not in notlist]
-Het = list(masterHet[i] for i in indices)
-Anis = list(masterAnis[i] for i in indices)
-Trial = list(masterTrial[i] for i in indices)
-
-#looking for specific heterogeneity scenarios
-indices = [index for index, value in enumerate(masterHet) if value == 5]
-Anis = list(masterAnis[i] for i in indices)
-Trial = list(masterTrial[i] for i in indices)
-Het = list(masterHet[i] for i in indices)
-
-#Scan for files
-for j in Tforfpre:
-    print (j)
-    for k in Trial:
-            file_name = fpre[1:]+str(k)+"_df.npy"
-            cur_dir = directory+j+fpre+str(k)+fsuf # Dir from where search starts can be replaced with any path
-            file_list = os.listdir(cur_dir)
-            if file_name in file_list:
-#                print (file_name, " File Exists in: ", cur_dir)
-                continue
-            else:
-                print (file_name, "File not found: ", cur_dir)
-
-#Constants
-yout = 50
-yin = 0
-xleft = 0
-xright = 30
-#Assign index to Variable
-doc1=10-gw
-dox1=11-gw
-Amm1=12-gw
-nitra1=17-gw
-sulpha1=22-gw
-tr1 = 29-gw
-Bfo1 = 8 - gw
-Bfn1 = 15 - gw
-Bfs1 = 20 - gw
-Bfa1 = 25 - gw
-Bmo1 = 9 - gw
-Bmn1 = 16 - gw
-Bms1 = 21 - gw
-Bma1 = 26 - gw
-Bifo1 = 13 - gw
-Bifn1 = 18 - gw
-Bifs1 = 23 - gw
-Bifa1 = 27 - gw
-Bimo1 = 14 - gw
-Bimn1 = 19 - gw
-Bims1 = 24 - gw
-Bima1 = 28 - gw
-head1 = 1 - gw
-vely=5
-velx=4
-vars = [doc1, dox1, Amm1, nitra1, sulpha1, Bmo1, Bma1, Bmn1, Bimo1, Bima1, Bimn1, head1]
-gvarnames = ["DOC", "DO", "Ammonium", "Nitrate", "Sulphate", "Active mobile Aerobes", "Active mobile Ammonia oxidizers", "Active mobile Nitrate reducers",
-                      "Inactive mobile Aerobes", "Inactive mobile Ammonia oxidizers", "Inactive mobile Nitrate reducers","Head","Nitrogen","TOC"]
-AFbiomassvars = [Bfo1, Bfa1, Bfn1, Bmo1, Bma1, Bmn1, Bifo1, Bifa1, Bifn1, Bimo1, Bima1, Bimn1]
-AFbiomassgvarnames = ["Active fixed Aerobes", "Active fixed Ammonia oxidizers", "Active fixed Nitrate reducers",
-                      "Active mobile Aerobes", "Active mobile Ammonia oxidizers", "Active mobile Nitrate reducers",
-                      "Inactive fixed Aerobes", "Inactive fixed Ammonia oxidizers", "Inactive fixed Nitrate reducers",
-                      "Inactive mobile Aerobes", "Inactive mobile Ammonia oxidizers", "Inactive mobile Nitrate reducers"]
-
-#Spectral density/spectrogram function plot
-Regimes = ["Slow","Equal","Fast"]
-plotg = ["DOC","DO","TOC","Nitrogen"]
-fsample = 73
-from scipy import signal
-from scipy import fft
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = [20,15], sharey = True, sharex = True)
-plt.suptitle("Spectogram: Head at inlet")
-count = 0
-for Reg in Regimes:
-    print (Reg)
-    Tforfpre = [Reg+'AR_0', Reg+'AR_1', Reg+'AR_2',Reg+'AR_5']
-    for p in Tforfpre[1:]:
-        print (p)
-        for t in Trial[:1]:
-            print (t)
-            path = directory+p+fpre+str(t)+fsuf+fpre+str(t)
-#            df0, massendtime0, masstime0, conctime0, Velocity0, Headinlettime0 = sta.calcconcmasstime(t, Het[Trial.index(t)], Anis[Trial.index(t)], gw, directory+p, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
-            df = np.load(path+"_df.npy")
-            Headinlettime0 = np.mean(df[2,1:,yin,:], axis = -1)*-1
-            freqs, times, spect = signal.spectrogram(Headinlettime0, fsample, scaling = "spectrum")
-            print(np.shape(spect))
-#            axes.flat[count].imshow(spect, aspect = 'auto', cmap = 'hot_r', origin = 'lower')
-            axes.flat[count].pcolormesh(times,freqs, spect)
-            axes.flat[count].set_title(p)
-            axes.flat[count].set_ylim([0,2])
-            axes.flat[count].set_ylabel("Frequency (per year)")
-            axes.flat[count].set_xlabel("Time (years)")
-            count = count + 1
-plt.savefig(directory+"spectrogram__head_09062020.png", dpi = 300, bbox_inches='tight', pad_inches = 0)
-
-#fastfourier transform - power spectrum - head at inlet
-N = 1095
-dt = 5/365
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = [20,15], sharex = True, sharey = 'col')
+#fastfourier transform - power spectrum - head at inlet of input series
+N = 5475
+dt = 1/365
+fig, axes = plt.subplots(nrows = 1, ncols = 3, sharex = True, sharey = True)
 plt.suptitle("FFT: Head at inlet")
 count = 0
-for Reg in Regimes:
-    print (Reg)
-    Tforfpre = [Reg+'AR_0', Reg+'AR_1', Reg+'AR_2',Reg+'AR_5']
-    for p in Tforfpre[1:]:
-        print (p)
-        for t in Trial[:1]:
-            print (t)
-            path = directory+p+fpre+str(t)+fsuf+fpre+str(t)
-#            df0, massendtime0, masstime0, conctime0, Velocity0, Headinlettime0 = sta.calcconcmasstime(t, Het[Trial.index(t)], Anis[Trial.index(t)], gw, directory+p, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
-            df = np.load(path+"_df.npy")
-            Headinlettime0 = np.mean(df[2,1:,yin,:], axis = -1)*-1
-            normheadin = (Headinlettime0 - np.mean(Headinlettime0))/np.std(Headinlettime0)
-            fhat = np.fft.fft(normheadin, N)
-            PSD = fhat*np.conj(fhat)/N
-            freq = (1/(N*dt)) *np.arange(N)
-            L = np.arange(1, np.floor(N/2), dtype = "int")
-            print(np.shape(yf))
-            axes.flat[count].semilogy(freq[L], PSD[L], color = 'r', LineWidth = 2, label = 'Noisy')
-            axes.flat[count].set_xlim((0,5))
-            axes.flat[count].grid()
-            axes.flat[count].set_title(p)
-            axes.flat[count].set_ylabel("Power")
-            axes.flat[count].set_xlabel("Frequency (per year)")
-            count = count + 1
-plt.savefig(directory+"fft__head_trimmed.png", dpi = 300, bbox_inches='tight', pad_inches = 0)
+for f in filenames:
+    timdata = pd.read_csv(f, sep = '\t')
+    print (filenames.index(f))
+    y = timdata.Head
+    normheadin = (y - np.mean(y))/np.std(y)
+    fhat = np.fft.fft(y, N)
+    PSD = fhat*np.conj(fhat)/N
+    freq = (1/(N*dt)) *np.arange(N)
+    L = np.arange(1, np.floor(N/2), dtype = "int")
+    print(np.shape(y))
+    axes.flat[count].plot(freq[L], PSD[L], color = 'r', LineWidth = 2, label = 'Noisy')
+#    axes.flat[count].set_xlim((0,3))
+    axes.flat[count].grid()
+    axes.flat[count].set_title("Variance: "+timseries[filenames.index(f)])
+    axes.flat[count].set_ylabel("Power")
+    axes.flat[count].set_xlabel("Frequency (per year)")
+    count = count + 1
+plt.savefig(directory+"fft__inputhead_trimmed.png", dpi = 300, bbox_inches='tight', pad_inches = 0)
 
 #fastfourier transform - power spectrum - concentration at outlet inlet
 N = 1095
@@ -184,7 +73,7 @@ for Reg in Regimes:
                 PSD = fhat*np.conj(fhat)/N
                 freq = (1/(N*dt)) *np.arange(N)
                 L = np.arange(1, np.floor(N/2), dtype = "int")
-                axes.flat[Trial.index(t)].semilogy(freq[L], PSD[L], color = 'r', LineWidth = 2, label = 'Noisy')
+#                axes.flat[Trial.index(t)].semilogy(freq[L], PSD[L], color = 'r', LineWidth = 2, label = 'Noisy')
                 axes.flat[Trial.index(t)].set_xlim((0,3))
                 axes.flat[Trial.index(t)].grid()
                 axes.flat[Trial.index(t)].set_ylim(bottom = 0.1)
@@ -799,13 +688,11 @@ delayplot.savefig("Z:/Saturated_flow/diffusion_transient/delay_chem_square.pdf",
 delayplot.savefig("Z:/Saturated_flow/diffusion_transient/delay_chem_square.png", dpi = 300, bbox_inches = 'tight')#, pad_inches = 0.1)
 
 
-Regimes = ["Slow", "Equal", "Fast"]
+Regimes = ["Slow", "Equal"]
 intsce = ['H', 44, 76, 73, 80, 84, 63]
-intsce = [76, 73, 80, 84, 63]
 for i in intsce:
     initseries = [500, 430, 600] 
     lastseries = [700, 630, 800]
-    stp.generate_chem_timeseries(Regimes, initseries, lastseries, Trial[Trial.index(i)], Het[Trial.index(i)], Anis[Trial.index(i)], gw, directory, fpre, vars, gvarnames, fsuf, yin, yout, xleft, xright)
     stp.generate_timeseries(Regimes, initseries, lastseries, Trial[Trial.index(i)], Het[Trial.index(i)], Anis[Trial.index(i)], gw, d, fpre, vars, gvarnames, fsuf, yin, yout, xleft, xright, AFbiomassvars, AFbiomassgvarnames, "Active fixed")
     stp.generate_timeseries(Regimes, initseries, lastseries, Trial[Trial.index(i)], Het[Trial.index(i)], Anis[Trial.index(i)], gw, d, fpre, vars, gvarnames, fsuf, yin, yout, xleft, xright, AFbiomassvars, AFbiomassgvarnames, "Active mobile")
     stp.generate_timeseries(Regimes, initseries, lastseries, Trial[Trial.index(i)], Het[Trial.index(i)], Anis[Trial.index(i)], gw, d, fpre, vars, gvarnames, fsuf, yin, yout, xleft, xright, AFbiomassvars, AFbiomassgvarnames, "Inactive fixed")

@@ -334,6 +334,91 @@ def generate_timeseries(Regimes, initseries, lastseries, Trial, Het, Anis, gw, d
     
     return None
 
+def generate_chem_timeseries(Regimes, initseries, lastseries, Trial, Het, Anis, gw, d, fpre, vars, gvarnames, fsuf, yin, yout, xleft, xright):
+    for Reg in Regimes:
+        titlesize = 35
+        legendsize = 25
+        ticksize = 30
+        axissize = 25
+        line = '--'
+        dots = 'dotted'
+        xindex = list(range(0,1095*5,5))
+        Tforfpre = ['0/', '1/', '2/', '5/']
+#        df0,massendtime0, masstime0, conctime0, Velocity0, head0 = calcconcmasstime (Trial, Het, Anis, gw, d+Reg + "AR_"+Tforfpre[0], fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+#        h = []
+#        c = np.zeros([1095,np.shape(conctime0)[2]])
+#        for idx in range(1095):
+#            h.append(head0[-1])
+#            c[idx,:] = conctime0[-1,yout,:]
+        figbig, axes = plt.subplots(nrows=5, ncols=len(Tforfpre)-1, figsize=[30, 20], sharey = 'row', sharex = 'col')
+        plt.suptitle("Variance: "+ str(Het)+" & Anisotropy: "+str(Anis), fontsize = titlesize)
+        for j, init, last in zip(Tforfpre[1:], initseries, lastseries):
+            newd = d + Reg + "AR_" + j
+            Titles = "Time series: "+str(Tforfpre.index(j))
+            df,massendtime, masstime, conctime, Velocity, head = calcconcmasstime (Trial, Het, Anis, gw, newd, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+            concmeantime = np.zeros([1095,np.shape(conctime)[2]])
+            for idx in range(1095):
+                concmeantime[idx,:] = np.mean(conctime[:,yout,:], axis = 0)
+            axes[0][Tforfpre.index(j)-1].plot(xindex[init:last], head[init:last], label = "Groundwater head (m)", color = "black")
+#            axes[0][Tforfpre.index(j)-1].plot(xindex[init:last], h[init:last], label = "Groundwater head (m)", color = "black", linestyle = line)        
+#            ymax, ymin, xposmax, xposmin = localmaxmin(head[init:last],h[init:last], init)
+#            axes[0][Tforfpre.index(j)-1].plot([xposmax, xposmax], [ymin, ymax],':',  c ='grey')
+#            axes[0][Tforfpre.index(j)-1].plot([xposmin, xposmin], [ymin, ymax],':',  c ='grey')
+#            axes[0][Tforfpre.index(j)-1].annotate(xposmax, xy = (xposmax, ymax), xytext = (xposmax+2, ymax - (ymax-ymin)/2), size = legendsize)
+#            axes[0][Tforfpre.index(j)-1].annotate(xposmin, xy = (xposmin, ymin), xytext = (xposmin+2, ymin + (ymax-ymin)/2), size = legendsize)
+            axes[0][Tforfpre.index(j)-1].set_title(Titles, fontsize = titlesize)
+            axes[1][Tforfpre.index(j)-1].plot(xindex[init:last], conctime[init+1:last+1,yout,0], label = gvarnames[0], color = "black")
+            axes[1][Tforfpre.index(j)-1].plot(xindex[init:last], concmeantime[init+1:last+1,0], label = gvarnames[0], color = "black", linestyle = dots)
+#            axes[1][Tforfpre.index(j)-1].plot(xindex[init:last], c[init:last,0], label = gvarnames[0], color = "black", linestyle = line)
+#            ymax, ymin, xposmax, xposmin = localmaxmin(conctime[init+1:last+1,yout,0], c[init:last,0], init)
+#            axes[1][Tforfpre.index(j)-1].plot([xposmax, xposmax], [ymin, ymax],':',  c ='grey')
+#            axes[1][Tforfpre.index(j)-1].plot([xposmin, xposmin], [ymin, ymax],':',  c ='grey')
+#            axes[1][Tforfpre.index(j)-1].annotate(xposmax, xy = (xposmax, ymax), xytext = (xposmax+2, ymax-(ymax-ymin)/2), size = legendsize)
+#            axes[1][Tforfpre.index(j)-1].annotate(xposmin, xy = (xposmin, ymin), xytext = (xposmin+2, ymin+(ymax-ymin)/2), size = legendsize)
+            axes[2][Tforfpre.index(j)-1].plot(xindex[init:last], conctime[init+1:last+1,yout,1], label = gvarnames[1], color = "red")
+#            axes[2][Tforfpre.index(j)-1].plot(xindex[init:last], c[init:last,1], label = gvarnames[1], color = "red", linestyle = line)
+            axes[2][Tforfpre.index(j)-1].plot(xindex[init:last], concmeantime[init+1:last+1,1], label = gvarnames[1], color = "red", linestyle = dots)
+#            ymax, ymin, xposmax, xposmin = localmaxmin(conctime[init+1:last+1,yout,1], c[init:last,1], init)
+#            axes[2][Tforfpre.index(j)-1].plot([xposmax, xposmax], [ymin, ymax],':',  c ='grey')
+#            axes[2][Tforfpre.index(j)-1].plot([xposmin, xposmin], [ymin, ymax],':',  c ='grey')
+#            axes[2][Tforfpre.index(j)-1].annotate(xposmax, xy = (xposmax, ymax), xytext = (xposmax+2, ymax-(ymax-ymin)/2), size = legendsize)
+#            axes[2][Tforfpre.index(j)-1].annotate(xposmin, xy = (xposmin, ymin), xytext = (xposmin+2, ymin+(ymax-ymin)/2), size = legendsize)
+            axes[3][Tforfpre.index(j)-1].plot(xindex[init:last], conctime[init+1:last+1,yout,2], label = gvarnames[2], color = "blue")
+#            axes[3][Tforfpre.index(j)-1].plot(xindex[init:last], c[init:last,2], label = gvarnames[2], color = "blue", linestyle = line)
+            axes[3][Tforfpre.index(j)-1].plot(xindex[init:last], concmeantime[init+1:last+1,2], label = gvarnames[2], color = "blue", linestyle = dots)            
+#            ymax, ymin, xposmax, xposmin = localmaxmin(conctime[init+1:last+1,yout,2], c[init:last,2], init)
+#            axes[3][Tforfpre.index(j)-1].plot([xposmax, xposmax], [ymin, ymax],':',  c ='grey')
+#            axes[3][Tforfpre.index(j)-1].plot([xposmin, xposmin], [ymin, ymax],':',  c ='grey')
+#            axes[3][Tforfpre.index(j)-1].annotate(xposmax, xy = (xposmax, ymax), xytext = (xposmax+2, ymax-(ymax-ymin)/2), size = legendsize)
+#            axes[3][Tforfpre.index(j)-1].annotate(xposmin, xy = (xposmin, ymin), xytext = (xposmin+2, ymin+(ymax-ymin)/2), size = legendsize)        
+            axes[4][Tforfpre.index(j)-1].plot(xindex[init:last], conctime[init+1:last+1:,yout,3], label = gvarnames[3], color = "green")
+#            axes[4][Tforfpre.index(j)-1].plot(xindex[init:last], c[init:last,3], label = gvarnames[3], color = "green", linestyle = line)
+            axes[4][Tforfpre.index(j)-1].plot(xindex[init:last], concmeantime[init+1:last+1,3], label = gvarnames[3], color = "green", linestyle = dots)
+#            ymax, ymin, xposmax, xposmin = localmaxmin(conctime[init+1:last+1,yout,3], c[init:last,3], init)
+#            axes[4][Tforfpre.index(j)-1].plot([xposmax, xposmax], [ymin, ymax],':',  c ='grey')
+#            axes[4][Tforfpre.index(j)-1].plot([xposmin, xposmin], [ymin, ymax],':',  c ='grey')
+#            axes[4][Tforfpre.index(j)-1].annotate(xposmax, xy = (xposmax, ymax), xytext = (xposmax+2, ymax-(ymax-ymin)/2), size = legendsize)
+#            axes[4][Tforfpre.index(j)-1].annotate(xposmin, xy = (xposmin, ymin), xytext = (xposmin+2, ymin+(ymax-ymin)/2), size = legendsize)
+
+            ax = axes[:,Tforfpre.index(j)-1]
+            if (Tforfpre.index(j)-1==0):
+                off = 150
+                ax[0].annotate("Velocity", xy = (0,0.5), xytext = (-ax[0].yaxis.labelpad-off,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical', size = axissize)
+                ax[1].annotate(str(gvarnames[0]), xy = (0,0.5), xytext = (-ax[1].yaxis.labelpad-off,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical', size = axissize)
+                ax[2].annotate(str(gvarnames[1]), xy = (0,0.5), xytext = (-ax[2].yaxis.labelpad-off,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical', size = axissize)
+                ax[3].annotate(str(gvarnames[2]), xy = (0,0.5), xytext = (-ax[3].yaxis.labelpad-off,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical', size = axissize)
+                ax[4].annotate(str(gvarnames[3]), xy = (0,0.5), xytext = (-ax[4].yaxis.labelpad-off,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical', size = axissize)
+                
+        for ax in axes[:,0]:
+            ax.tick_params(labelsize = ticksize)
+        for ax in axes[4]:
+            ax.set_xlabel("Time (days)", fontsize = axissize)      
+            ax.tick_params(labelsize = ticksize)
+        picname = "Z:/Saturated_flow/diffusion_transient/chemswithvel_temp_"+str(Tforfpre.index(j))+"_"+Reg+"_"+str(Trial)+"_ZOOMED.png"
+        plt.savefig(picname, dpi = 300, bbox_inches='tight', pad_inches = 0)
+    
+    return None
+
 def amplitude_biomass (data, Chemseries):
     Regimes = ["Slow", "Medium", "Fast"]
 #    colseries=["indianred","g","steelblue"]
