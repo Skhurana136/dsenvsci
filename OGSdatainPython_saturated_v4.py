@@ -4,17 +4,15 @@ Created on Thu Jul 25 12:26:03 2019
 
 @author: khurana
 """
-<<<<<<< HEAD
-import numpy  as np
-=======
+import numpy as np
 
 import numpy as np
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
 import csv
 from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
+
 sys.path.append("X:\dsenvsci")
 import analyses.saturated_steady_state as sssa
 import plots.saturated_steady_state as sssp
@@ -1649,9 +1647,8 @@ for y in range(51):
     )
 csvfile.close()
 
-<<<<<<< HEAD
-#Boxplots:
-=======
+# Boxplots:
+
 # tracer studies
 tr1 = 8 - gw
 vely = 5
@@ -1751,7 +1748,6 @@ for Reg, step in zip(Regimes, steps):
     )
 
 # Boxplots:
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
 sgvarnames = ["TOC", "DO", "Nitrogen"]
 # Mass flux with variance
 dummy = sssp.boxV_Aflux(fastc, slowc, equalc, sgvarnames, imgsize=[24, 18])
