@@ -10,10 +10,8 @@ import data_reader.data_processing as proc
 import analyses.unsaturated_steady_state as ussa
 import analyses.unsaturated_transient as uta
 import plots.unsaturated_steady_state as ussp
-import data_reader.reader as rdr
-import pandas as pd
 
-# Saturated flow regime
+# Unsaturated flow regime
 Reg = "Fast"
 directory = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
 fpre = "RF-A"
@@ -260,22 +258,6 @@ csvfile.close()
 # plotting boxplots to see variance of breakthrough from homogeneous scenario
 tracerplot = ussp.plot_tracer(f)
 tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
-
-# Reading and storing in numpy array
-for j in range(len(Trial)):
-    print(str(Trial[j]))
-    di = directory + fpre + str(Trial[j]) + fsuf
-    fwithd = di + filename
-    print("Reading tech file....")
-    size, steps, Headers, D = rdr.readTecfile(fwithd)
-    print("Converting to array....")
-    df = rdr.Converttomarr_1581(D)
-    print("Saving numpy array....")
-    #    np.save(di+fpre+str(Trial[j])+'_D', D)
-    np.save(di + fpre + str(Trial[j]) + "_df", df)
-    # Test for correct orientation of the data
-    for i in range(np.shape(df)[0]):
-        print(Headers[i + 3], np.mean(df[i, steps - 1, 0, :]))
 
 import matplotlib.pyplot as plt
 import seaborn as sns
