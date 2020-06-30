@@ -273,21 +273,6 @@ def steadystate_active_biomass(data, biomassvariablenames):
                 axes.flat[colidx1].set_xlabel("")
                 axes.flat[colidx1].set_xticklabels([])
             else:
-<<<<<<< HEAD
-                axes.flat[colidx1].tick_params(axis = 'x', labelsize = 15)
-    plt.legend(loc = "best", fontsize = 12)
-    for ax,typsp in zip(axes[0,:], species):
-        ax.set_title(typsp, fontsize = 15)
-    axes[0,-1].annotate(position[0], xy = (0, 0.5), xytext = (200,0), xycoords = 'axes fraction', textcoords='offset points', size = 'large', ha = 'left', va = 'center', rotation = 'vertical', fontsize = 15)
-    axes[1,-1].annotate(position[1], xy = (0, 0.5), xytext = (200,0), xycoords = 'axes fraction', textcoords='offset points', size = 'large', ha = 'left', va = 'center', rotation = 'vertical', fontsize = 15)
-    plt.annotate("Normalized biomass in the domain", xy = (-2.5, 1), xytext = (-50,0), xycoords = 'axes fraction', textcoords='offset points', size = 'large', ha = 'left', va = 'center', rotation = 'vertical', fontsize = 15)
-    plt.annotate("Fraction of breakthrough time in base case", xy = (-0.4, -0.3), xytext = (-50,0), xycoords = 'axes fraction', textcoords='offset points', size = 'large', ha = 'center', va = 'center', fontsize = 15)
-    
-    return (plt)
-
-def heatmapvelocity (directory, fpre, fsuf, trialseries, varianceseries, anisotropyseries):
-    #Heatmaps
-=======
                 axes.flat[colidx1].tick_params(axis="x", labelsize=15)
     plt.legend(loc="best", fontsize=12)
     for ax, typsp in zip(axes[0, :], species):
@@ -317,7 +302,7 @@ def heatmapvelocity (directory, fpre, fsuf, trialseries, varianceseries, anisotr
         fontsize=15,
     )
     plt.annotate(
-        "Normalized biomass in the domain (uM C)",
+        "Normalized biomass in the domain",
         xy=(-2.5, 1),
         xytext=(-50, 0),
         xycoords="axes fraction",
@@ -347,7 +332,6 @@ def heatmapvelocity(
     directory, fpre, fsuf, trialseries, varianceseries, anisotropyseries
 ):
     # Heatmaps
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
     from matplotlib.ticker import FuncFormatter
 
     fmtvel = lambda x, pos: "{:1.1e}".format(x)
@@ -2090,59 +2074,45 @@ def plot_tracer():
     plt.xlabel("Variance:Anisotropy")
     plt.ylabel("% of homogeneous scenario")
     plt.title("Time taken for tracer breakthrough")
-<<<<<<< HEAD
 
     return plt
 
-def plotoxiccellssdo(limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames):
+
+def plotoxiccellssdo(
+    limit,
+    Trial,
+    Het,
+    Anis,
+    gw,
+    d,
+    fpre,
+    fsuf,
+    yin,
+    yout,
+    xleft,
+    xright,
+    vars,
+    gvarnames,
+):
     axissize = 15
     ticksize = 15
     titlesize = 15
-    oxiccells = calcoxiccells(limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
-=======
-    plt.savefig(
-        "X:/Saturated_flow/Steady_state/Tracer_studies/breakthroughfraction.png",
-        dpi=300,
-    )
-    plt.savefig(
-        "X:/Saturated_flow/Steady_state/Tracer_studies/breakthroughfraction.pdf",
-        dpi=300,
-    )
-
-    sns.set(rc={"figure.figsize": (7, 7)})
-    sns.set_style("whitegrid")
-    sns.boxplot(
-        x="Xlabels",
-        y="%fraction_withslow",
-        hue="Regime",
-        data=combined_tracer,
-        hue_order=["Slow", "Medium", "Fast"],
-        palette=["coral", "mediumseagreen", "steelblue"],
-    )
-    plt.xlabel("Variance:Anisotropy")
-    plt.ylabel("% of homogeneous scenario in slow flow regime")
-    plt.yscale("log")
-    plt.title("Time taken for tracer breakthrough")
-    plt.savefig(
-        "X:/Saturated_flow/Steady_state/Tracer_studies/breakthroughfraction_withslow.png",
-        dpi=300,
-    )
-    plt.savefig(
-        "X:/Saturated_flow/Steady_state/Tracer_studies/breakthroughfraction_withslow.pdf",
-        dpi=300,
-    )
-
-
-def plotoxiccellssdo(
-    limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
-):
-    axissize = 14
-    ticksize = 12
-    titlesize = 14
     oxiccells = calcoxiccells(
-        limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
+        limit,
+        Trial,
+        Het,
+        Anis,
+        gw,
+        d,
+        fpre,
+        fsuf,
+        yin,
+        yout,
+        xleft,
+        xright,
+        vars,
+        gvarnames,
     )
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
     nrows = 2
     ncols = 4
     figsize = [14, 8]
@@ -2151,13 +2121,6 @@ def plotoxiccellssdo(
     )
     count = 0
     for j in Trial:
-<<<<<<< HEAD
-        df,massendtime, masstime, conctime, Velocity, head = calcconcmasstime (j, Het[Trial.index(j)], Anis[Trial.index(j)], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
-        axes.flat[count].plot(conctime[-1,:,gvarnames.index("DO")], 'r-')
-        axes.flat[count].set_ylim(0,260)
-        axes.flat[count].tick_params(axis='y', colors = 'r', labelsize = ticksize)
-        axes.flat[count].set_title("Variance: "+str(Het[Trial.index(j)])+"& Anisotropy: "+str(Anis[Trial.index(j)]), fontsize = titlesize)
-=======
         df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(
             j,
             Het[Trial.index(j)],
@@ -2171,8 +2134,9 @@ def plotoxiccellssdo(
             xleft,
             xright,
             vars,
+            gvarnames,
         )
-        axes.flat[count].plot(conctime[-1, :, 1], "r-")
+        axes.flat[count].plot(conctime[-1, :, gvarnames.index("DO")], "r-")
         axes.flat[count].set_ylim(0, 260)
         axes.flat[count].tick_params(axis="y", colors="r", labelsize=ticksize)
         axes.flat[count].set_title(
@@ -2182,7 +2146,6 @@ def plotoxiccellssdo(
             + str(Anis[Trial.index(j)]),
             fontsize=titlesize,
         )
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
         ax2 = axes.flat[count].twinx()
         ax2.plot((oxiccells[Trial.index(j), :, 0] / 31) * 100, "b-")
         ax2.set_ylim(0, 105)
