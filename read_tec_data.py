@@ -10,6 +10,7 @@ import data_reader.reader as rdr
 
 #set up basic constants 
 fpre = "RF-A"
+masterTrial, masterAnis, masterHet = proc.masterScenarios()
 masterTrial = [
     "H",
     37,
