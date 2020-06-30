@@ -13,7 +13,7 @@ import plots.unsaturated_steady_state as ussp
 import data_reader.reader as rdr
 import pandas as pd
 #Saturated flow regime
-Reg = "Equal"
+Reg = "Fast"
 directory = r"X:/Richards_flow/Tracer_studies/"+ Reg+ "AR/"
 fpre = 'RF-A'
 masterTrial = ['H',37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
@@ -23,6 +23,7 @@ fsuf  = r"/"
 gw = 0
 
 filename = 'model_domain_quad.tec'
+
 
 #setup what we really want to investigate
 #Default:
@@ -109,10 +110,12 @@ vedge = 0.005
 velem = 0.01
 vbc = 0.3
 por = 0.2
-yout = 100
-yin = 0
-xleft = 0
-xright = 60
+#yout = 100
+#yin = 0
+#xleft = 0
+#xright = 60
+import matplotlib.pyplot as plt
+import seaborn as sns
 for Reg in ["Equal"]:
     d = r"X:/Richards_flow/Tracer_studies/"+Reg+ "AR/"
     fpre = "RF-A"
@@ -124,10 +127,10 @@ for Reg in ["Equal"]:
         v1 = df[2,-2,:,:]
         v2 = df[2,-1,:,:]
         diff = (np.abs(v2 - v1))*100/0.0038
-        plt.figure()
-        sns.heatmap(diff)
-        plt.title(Trial[j])
-        plt.savefig(d+str(Trial[j])+"_diff_velocities_finergrid_100days.png",dpi = 300, pad_inches = 0)
+#        plt.figure()
+#        sns.heatmap(diff)
+#        plt.title(Trial[j])
+#        plt.savefig(d+str(Trial[j])+"_diff_velocities_finergrid_100days.png",dpi = 300, pad_inches = 0)
         arr = v1 == v2
         if (arr.any()):
             print(Trial[j], " steady")
@@ -179,7 +182,7 @@ for Reg in ["Equal"]:
         v[:,yout] = (veloredg+veloledg)*vedge+np.sum(veloelem*velem, axis = -1)
         v[:,yin+1:yout] = (velrelem+vellelem)*vedge+np.sum(velelem*velem, axis = -1)
         plt.plot(v[t,:], label = Reg + str(Trial[j]))
-        plt.ylim((-0.00113, -0.00115))#-0.004,0)
+#        plt.ylim((-0.00113, -0.00115))#-0.004,0)
         plt.ylabel("Volumetric flow rate (m3/d)")
         plt.xlabel ("Y (cm)")
         plt.legend()
@@ -189,7 +192,7 @@ for Reg in ["Equal"]:
         plt.plot(mftime[-1,:], label = Reg + str(Trial[j]))
         plt.ylabel("Mass flux of tracer (umoles per day)")
         plt.xlabel ("Y (cm)")
-        plt.ylim((0.0148,0.015))
+#        plt.ylim((0.0148,0.015))
         plt.title ("Tracer mass flux in the domain at steady state conditions")
         plt.legend()
     plt.figure()
@@ -199,8 +202,8 @@ for Reg in ["Equal"]:
         plt.ylabel("Tracer (uM)")
         plt.xlabel ("Time step")
         plt.title ("Tracer concentration at outlet at steady state conditions")
-        plt.ylim((19.9,20.1))
-        plt.legend() 
+        plt.ylim((0,20.1))
+#        plt.legend() 
         
         
         plt.plot(np.mean(df[0,-1,:,:], axis = -1), label = Reg + str(Trial[j]))
