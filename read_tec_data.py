@@ -7,172 +7,24 @@ Created on Tue Jun 30 21:42:48 2020
 #Reading tec files and storing them as numpy array - possible options to read 51x31 matrices or 101x61 matrices in data_reader library
 import numpy as np
 import data_reader.reader as rdr
+import data_reader.data_processing as proc
 
 #set up basic constants 
 fpre = "RF-A"
-masterTrial, masterAnis, masterHet = proc.masterScenarios()
-masterTrial = [
-    "H",
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59,
-    60,
-    61,
-    62,
-    63,
-    64,
-    65,
-    66,
-    67,
-    68,
-    69,
-    70,
-    71,
-    72,
-    73,
-    74,
-    75,
-    76,
-    77,
-    78,
-    79,
-    80,
-    81,
-    82,
-    83,
-    84,
-]
-masterHet = [
-    0,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    5,
-    5,
-    5,
-    10,
-    10,
-    10,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-]
-masterAnis = [
-    1,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-]
+scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneous scenarios that were run
 fsuf = r"/"
-
 filename = "model_domain_quad.tec" #same filename in each subfolder
 
-# setup what we really want to read
 # Default:
-Trial = masterTrial
-Het = masterHet
-Anis = masterAnis
+Trial = list(t for t,values in scdict.items())
+Het = list(values['Het'] for t,values in scdict.items())
+Anis = list(values['Anis'] for t,values in scdict.items())
+
+#Variations:
+#notlist = [43,54]
+#Trial = list(t for t,values in scdict.items() if t not in notlist)
+#Het = list(values['Het'] for t,values in scdict.items() if t not in notlist)
+#Anis = list(values['Anis'] for t,values in scdict.items() if t not in notlist)
 
 # Reading and storing in numpy array
 for Regime in ["Equal", "Fast"]:

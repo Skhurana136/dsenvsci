@@ -17,182 +17,25 @@ import pandas as pd
 Reg = "Fast"
 directory = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
 fpre = "RF-A"
-masterTrial = [
-    "H",
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59,
-    60,
-    61,
-    62,
-    63,
-    64,
-    65,
-    66,
-    67,
-    68,
-    69,
-    70,
-    71,
-    72,
-    73,
-    74,
-    75,
-    76,
-    77,
-    78,
-    79,
-    80,
-    81,
-    82,
-    83,
-    84,
-]
-masterHet = [
-    0,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    5,
-    5,
-    5,
-    10,
-    10,
-    10,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-]
-masterAnis = [
-    1,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-]
 fsuf = r"/"
 gw = 0
 
-filename = "model_domain_quad.tec"
+scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneous scenarios that were run
+
+# Default:
+Trial = list(t for t,values in scdict.items())
+Het = list(values['Het'] for t,values in scdict.items())
+Anis = list(values['Anis'] for t,values in scdict.items())
 
 
 # setup what we really want to investigate
 # Default:
-# Trial = masterTrial
-# Het = masterHet
-# Anis = masterAnis
-
 # Variations:
-Trial = []
-notlist = [43, 52]
-for i in masterTrial:
-    if i not in notlist:
-        Trial.append(i)
-Trial = masterTrial[: masterTrial.index(46)]
-Trial = ["H", 43, 44, 45, 52, 53, 54, 61, 62, 63]
-indices = list(masterTrial.index(i) for i in Trial)
-Het = list(masterHet[i] for i in indices)
-Anis = list(masterAnis[i] for i in indices)
+#notlist = [43,54]
+#Trial = list(t for t,values in scdict.items() if t not in notlist)
+#Het = list(values['Het'] for t,values in scdict.items() if t not in notlist)
+#Anis = list(values['Anis'] for t,values in scdict.items() if t not in notlist)
+
 # Constants
 yout = 50
 yin = 0

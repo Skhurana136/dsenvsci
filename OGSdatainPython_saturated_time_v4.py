@@ -6,7 +6,6 @@ Created on Thu Jul 25 12:26:03 2019
 """
 import numpy as np
 import csv
-from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import data_reader.data_processing as proc
@@ -19,183 +18,25 @@ import os
 Reg = "Fast"
 directory = r"Z:/Saturated_flow/diffusion_transient/"
 fpre = "/NS-A"
-masterTrial = [
-    "H",
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59,
-    60,
-    61,
-    62,
-    63,
-    64,
-    65,
-    66,
-    67,
-    68,
-    69,
-    70,
-    71,
-    72,
-    73,
-    74,
-    75,
-    76,
-    77,
-    78,
-    79,
-    80,
-    81,
-    82,
-    83,
-    84,
-]
-masterHet = [
-    0,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    5,
-    5,
-    5,
-    10,
-    10,
-    10,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-]
-masterAnis = [
-    1,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-]
-Tforfpre = [Reg + "AR_0", Reg + "AR_1", Reg + "AR_2", Reg + "AR_5"]
 fsuf = r"/"
 gw = 1
-filename = "model_domain_quad.tec"
-nScenarios = 3
+
+scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneous scenarios that were run
 
 # Default:
-Trial = masterTrial
-Het = masterHet
-Anis = masterAnis
+Trial = list(t for t,values in scdict.items())
+Het = list(values['Het'] for t,values in scdict.items())
+Anis = list(values['Anis'] for t,values in scdict.items())
+
 
 # Variations:
-# looking for specific trial scenarios
-notlist = [43, 52]
-indices = [index for index, value in enumerate(masterTrial) if value not in notlist]
-Het = list(masterHet[i] for i in indices)
-Anis = list(masterAnis[i] for i in indices)
-Trial = list(masterTrial[i] for i in indices)
+#notlist = [43,54]
+#Trial = list(t for t,values in scdict.items() if t not in notlist)
+#Het = list(values['Het'] for t,values in scdict.items() if t not in notlist)
+#Anis = list(values['Anis'] for t,values in scdict.items() if t not in notlist)
 
-# looking for specific heterogeneity scenarios
-indices = [index for index, value in enumerate(masterHet) if value == 5]
-Anis = list(masterAnis[i] for i in indices)
-Trial = list(masterTrial[i] for i in indices)
-Het = list(masterHet[i] for i in indices)
+Tforfpre = [Reg + "AR_0", Reg + "AR_1", Reg + "AR_2", Reg + "AR_5"]
+nScenarios = 3
 
 # Scan for files
 for j in Tforfpre:
