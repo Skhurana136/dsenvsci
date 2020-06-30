@@ -17,7 +17,7 @@ from analyses.unsaturated_transient import (
     biomasstimefunc,
     calcconcmasstimeX,
 )
-
+from data_reader.data_processing import tracerstudies
 
 def plotdataindex(data, index, timindex, ylabel, legend):
     plt.plot(np.mean(data[index, timindex, :, :], axis=-1), label=legend)
@@ -1276,3 +1276,23 @@ def plotoxiccellssdo(
     for ax in axes[-1]:
         ax.set_xlabel("Y (cm)", fontsize=axissize)
     return fig
+
+def plot_tracer(filename):
+    combined_tracer = tracerstudies(filename)
+    combined_tracer["%fraction"] = combined_tracer["fraction"] * 100
+    combined_tracer["%fraction_withslow"] = combined_tracer["fraction_withslow"] * 100
+    sns.set(rc={"figure.figsize": (7, 4)})
+    sns.set_style("whitegrid")
+    sns.boxplot(
+        x="Xlabels",
+        y="%fraction",
+        hue="Regime",
+        data=combined_tracer,
+        hue_order=["Slow", "Medium", "Fast"],
+        palette=["coral", "mediumseagreen", "steelblue"],
+    )
+    plt.xlabel("Variance:Anisotropy")
+    plt.ylabel("% of homogeneous scenario")
+    plt.title("Time taken for tracer breakthrough")
+
+    return plt

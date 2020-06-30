@@ -50,47 +50,8 @@ def processchemfiles(chemfile, regime):
     return chemfile
 
 
-def tracerstudies():
-    di = r"Z:\Saturated_flow\Steady_state\Tracer_studies\/"
-    filename = "NS-ATracerH_84_MF_1081220191522_equal.csv"
-    equal = pd.read_csv(di + filename, delimiter="\t")
-    equal["Regime"] = "Medium"
-
-    filename = "NS-ATracerH_84_MF_1121220192228_fast_0.00002.csv"
-    fast = pd.read_csv(di + filename, delimiter="\t")
-    fast["Regime"] = "Fast"
-
-    filename = "NS-ATracerH_84_MF_1081220191539_slowsk.csv"
-    slow = pd.read_csv(di + filename, delimiter=",")
-    slow["Regime"] = "Slow"
-
-    breakthrough = pd.concat([fast, slow, equal], axis=0, ignore_index=True)
-    breakthrough["Heterogeneity"] = breakthrough["Variance"]
-    breakthrough["VA"] = breakthrough["Heterogeneity"] * breakthrough["Anisotropy"]
-
-    breakthrough["%ofhomogeneous"] = breakthrough["del"] * 100
-    #    bth = breakthrough.rename(columns={'Scenario':'Trial'}).astype(str)
-
-    l = []
-    for i in range(len(breakthrough)):
-        if breakthrough["Variance"][i] == 0.1:
-            l.append(
-                str(breakthrough["Variance"][i])
-                + ":"
-                + str(breakthrough["Anisotropy"][i])
-            )
-        else:
-            l.append(
-                str(int(breakthrough["Variance"][i]))
-                + ":"
-                + str(breakthrough["Anisotropy"][i])
-            )
-
-    breakthrough["Xlabels"] = l
-    breakthrough = breakthrough.sort_values(by=["Variance", "Anisotropy"])
-
-    combined_tracer = pd.read_csv(
-        "X:/Saturated_flow/Steady_state/Tracer_studies/tracer_combined_05032020.csv",
+def tracerstudies(filename):
+    combined_tracer = pd.read_csv(filename,
         delimiter="\t",
     )
     combined_tracer.loc[combined_tracer.Regime == "Equal", "Regime"] = "Medium"
@@ -115,7 +76,7 @@ def tracerstudies():
     combined_tracer["Xlabels"] = l
     combined_tracer = combined_tracer.sort_values(by=["Variance", "Anisotropy"])
 
-    return breakthrough, combined_tracer
+    return combined_tracer
 
 
 def localmaxmin(y1, y2, init):

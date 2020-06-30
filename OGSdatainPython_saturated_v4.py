@@ -1705,7 +1705,9 @@ for Reg, step in zip(Regimes, steps):
         idx = idx + 1
 csvfile.close()
 # plotting boxplots to see variance of breakthrough from homogeneous scenario
-sssp.plot_tracer()
+sssp.plot_tracer("X:/Saturated_flow/Steady_state/Tracer_studies/tracer_combined_05032020.csv")
+#or sssp.plot_tracer(f)
+
 
 # plotting time series of tracer breakthrough in all flow regimes and trials:
 ncols = 8

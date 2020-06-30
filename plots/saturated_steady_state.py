@@ -2057,8 +2057,8 @@ def scatterrestime_biomass(dataset1, dataset2, dataset3):
     return dfall2, fig
 
 
-def plot_tracer():
-    breakthrough, combined_tracer = tracerstudies()
+def plot_tracer(filename):
+    combined_tracer = tracerstudies(filename)
     combined_tracer["%fraction"] = combined_tracer["fraction"] * 100
     combined_tracer["%fraction_withslow"] = combined_tracer["fraction_withslow"] * 100
     sns.set(rc={"figure.figsize": (7, 4)})

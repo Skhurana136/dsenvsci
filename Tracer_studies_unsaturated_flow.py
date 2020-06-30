@@ -203,11 +203,63 @@ vely = 5
 velx = 4
 vars = [tr1]
 gvarnames = ["Tracer"]
-Regimes = ["Equal"]
 vedge = 0.005
 velem = 0.01
 vbc = 0.3
 por = 0.2
+Regimes = ["Equal", "Fast"]
+steps = [200*0.005, 500 * 0.0002]
+#steps = [500 * 0.005, 200*0.005, 500 * 0.0002]
+#Regimes = ["Slow", "Equal", "Fast"]
+
+f = "X:/Richards_flow/Tracer_studies/tracer_equalfast_30062020.csv"
+csvfile = open(f, "w")
+writer = csv.writer(
+    csvfile,
+    delimiter="\t",
+    quotechar="\t",
+    quoting=csv.QUOTE_MINIMAL,
+    lineterminator="\n",
+)
+writer.writerow(
+    ["Sno", "Trial", "Variance", "Anisotropy", "Chem", "Time", "fraction", "Regime"]
+)
+idx = 1
+for Reg, step in zip(Regimes, steps):
+    d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
+    fpre = "RF-A"
+    df, conctime, masstime, Velocity, head = uta.calcconcmasstime(Trial[0], Het[0], Anis[0], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+    print(np.mean(df[vely - 3, 1:, :, :]))
+    Time = np.where(np.round(conctime[:, yout, 0], 3) > 10)
+    initial = step * Time[0][0]
+    for j in range(len(Trial)):
+        df, conctime, masstime, Velocity, head = uta.calcconcmasstime(Trial[j], Het[j], Anis[j], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+        print(np.mean(df[vely - 3, 1:, :, :]))
+        Time = np.where(np.round(conctime[:, yout, 0], 3) > 10)
+        Time2 = np.where(np.round(df[-1, :, 50, :], 3) > 10)
+        s = step
+#        if Reg == "Slow":
+#            if Trial[j] == 54:
+#                s = 100 * 0.01
+        print(s * Time[0][0], s * Time2[0][0], initial, (s * Time[0][0]) / initial)
+        writer.writerow(
+            [
+                idx,
+                Trial[j],
+                Het[j],
+                Anis[j],
+                "Tracer",
+                s * Time[0][0],
+                (s * Time[0][0]) / initial,
+                Reg,
+            ]
+        )
+        idx = idx + 1
+csvfile.close()
+
+# plotting boxplots to see variance of breakthrough from homogeneous scenario
+tracerplot = ussp.plot_tracer(f)
+tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
 
 # Reading and storing in numpy array
 for j in range(len(Trial)):

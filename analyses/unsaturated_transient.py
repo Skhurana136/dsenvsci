@@ -5,8 +5,6 @@ Created on Fri Apr 10 16:57:00 2020
 @author: khurana
 """
 import numpy as np
-import pandas as pd
-
 
 def calcconcmasstime(
     Trial,
