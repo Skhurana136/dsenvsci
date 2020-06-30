@@ -419,38 +419,52 @@ def calcaggres(mf):
     covresultsarr = np.array(cleancresults)
     return meanresultsarr, stdresultsarr, covresultsarr
 
-<<<<<<< HEAD
-def calcoxiccells(limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames):
-    oxiccells= np.zeros([len(Trial), 51,1])
-    for j in range(len(Trial)):
-        df,massendtime, masstime, conctime, Velocity, head = calcconcmasstime (Trial[j], Het[j], Anis[j], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
-        c = []
-        for k in range(51):
-            c.append(np.count_nonzero(df[vars[gvarnames.index("DO")]-3,np.shape(df)[1]-1,k,:]>limit))
-#        print (Trial[j], c)
-#        print ("Calculating number of oxic cells: ", c)
-        oxiccells [j,:,0] = c
-    
-=======
 
 def calcoxiccells(
-    limit, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
+    limit,
+    Trial,
+    Het,
+    Anis,
+    gw,
+    d,
+    fpre,
+    fsuf,
+    yin,
+    yout,
+    xleft,
+    xright,
+    vars,
+    gvarnames,
 ):
     oxiccells = np.zeros([len(Trial), 51, 1])
     for j in range(len(Trial)):
         df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(
-            Trial[j], Het[j], Anis[j], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
+            Trial[j],
+            Het[j],
+            Anis[j],
+            gw,
+            d,
+            fpre,
+            fsuf,
+            yin,
+            yout,
+            xleft,
+            xright,
+            vars,
+            gvarnames,
         )
         c = []
         for k in range(51):
             c.append(
-                np.count_nonzero(df[vars[1] - 3, np.shape(df)[1] - 1, k, :] > limit)
+                np.count_nonzero(
+                    df[vars[gvarnames.index("DO")] - 3, np.shape(df)[1] - 1, k, :]
+                    > limit
+                )
             )
         #        print (Trial[j], c)
         #        print ("Calculating number of oxic cells: ", c)
         oxiccells[j, :, 0] = c
 
->>>>>>> f7f63eb0e6948324f8268f43eddf135ee0f8e68a
     return oxiccells
 
 
