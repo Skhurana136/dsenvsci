@@ -6,9 +6,10 @@ This is a temporary script file.
 """
 import numpy as np
 import csv
+import pandas as pd
 import data_reader.data_processing as proc
 import analyses.unsaturated_transient as uta
-import plots.unsaturated_steady_state as ussp
+import plots.general_plots as gp
 
 # Unsaturated flow regime
 Reg = "Fast"
@@ -23,7 +24,6 @@ scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneou
 Trial = list(t for t,values in scdict.items())
 Het = list(values['Het'] for t,values in scdict.items())
 Anis = list(values['Anis'] for t,values in scdict.items())
-
 
 # setup what we really want to investigate
 # Default:
@@ -52,20 +52,13 @@ steps = [20*0.005, 5 * 0.0002]
 #steps = [500 * 0.005, 200*0.005, 500 * 0.0002]
 #Regimes = ["Slow", "Equal", "Fast"]
 
-f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_01072020.csv"
-csvfile = open(f, "w")
-writer = csv.writer(
-    csvfile,
-    delimiter="\t",
-    quotechar="\t",
-    quoting=csv.QUOTE_MINIMAL,
-    lineterminator="\n",
-)
-writer.writerow(
-    ["Sno", "Trial", "Variance", "Anisotropy", "Chem", "Time", "fraction", "Regime"]
-)
-idx = 1
+breakthrough2 = []
 for Reg, step in zip(Regimes, steps):
+    s = step
+    if Reg == "Equal":
+        r = "Medium"
+    else:
+        r = Reg
     d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
     fpre = "RF-A"
     df, conctime, masstime, Velocity, head = uta.calcconcmasstime('H', scdict['H']['Het'], scdict['H']['Het'], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
@@ -80,29 +73,18 @@ for Reg, step in zip(Regimes, steps):
         Time = np.where(np.round(conctime[:, yout, 0], 3) > 10)
         Time2 = np.where(np.round(df[-1, :, 50, :], 3) > 10)
         s = step
-#        if Reg == "Slow":
-#            if Trial[j] == 54:
-#                s = 100 * 0.01
         print(s * Time[0][0], s * Time2[0][0], initial, (s * Time[0][0]) / initial)
-        writer.writerow(
-            [
-                idx,
-                t,
-                h,
-                a,
-                "Tracer",
-                s * Time[0][0],
-                (s * Time[0][0]) / initial,
-                Reg,
-            ]
-        )
-        idx = idx + 1
-csvfile.close()
+        breakthrough2.append([t, h, a, "Tracer", s*Time[0][0], (s*Time[0][0])/initial, r])
 
+data = pd.DataFrame(breakthrough2, columns = ["Trial", "Variance", "Anisotropy", "Chem", "Time", "fraction", "Regime"])
+f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_01072020.csv"
+data.to_csv(f, sep = '\t')
+        
 # plotting boxplots to see variance of breakthrough from homogeneous scenario
-tracerplot = ussp.plot_tracer(f)
-tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact_v2.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
+tracerplot = gp.plot_tracer(f)
+tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
 
+#data_exploration of tracer studies
 import matplotlib.pyplot as plt
 import seaborn as sns
 
