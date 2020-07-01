@@ -7,7 +7,6 @@ This is a temporary script file.
 import numpy as np
 import csv
 import data_reader.data_processing as proc
-import analyses.unsaturated_steady_state as ussa
 import analyses.unsaturated_transient as uta
 import plots.unsaturated_steady_state as ussp
 
@@ -49,11 +48,11 @@ velem = 0.01
 vbc = 0.3
 por = 0.2
 Regimes = ["Equal", "Fast"]
-steps = [200*0.005, 500 * 0.0002]
+steps = [20*0.005, 5 * 0.0002]
 #steps = [500 * 0.005, 200*0.005, 500 * 0.0002]
 #Regimes = ["Slow", "Equal", "Fast"]
 
-f = "X:/Richards_flow/Tracer_studies/tracer_equalfast_30062020.csv"
+f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_01072020.csv"
 csvfile = open(f, "w")
 writer = csv.writer(
     csvfile,
@@ -69,12 +68,14 @@ idx = 1
 for Reg, step in zip(Regimes, steps):
     d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
     fpre = "RF-A"
-    df, conctime, masstime, Velocity, head = uta.calcconcmasstime(Trial[0], Het[0], Anis[0], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+    df, conctime, masstime, Velocity, head = uta.calcconcmasstime('H', scdict['H']['Het'], scdict['H']['Het'], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
     print(np.mean(df[vely - 3, 1:, :, :]))
     Time = np.where(np.round(conctime[:, yout, 0], 3) > 10)
     initial = step * Time[0][0]
-    for j in range(len(Trial)):
-        df, conctime, masstime, Velocity, head = uta.calcconcmasstime(Trial[j], Het[j], Anis[j], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
+    for t in Trial:
+        h = scdict[t]['Het']
+        a = scdict[t]['Anis']
+        df, conctime, masstime, Velocity, head = uta.calcconcmasstime(t, h, a, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
         print(np.mean(df[vely - 3, 1:, :, :]))
         Time = np.where(np.round(conctime[:, yout, 0], 3) > 10)
         Time2 = np.where(np.round(df[-1, :, 50, :], 3) > 10)
@@ -86,9 +87,9 @@ for Reg, step in zip(Regimes, steps):
         writer.writerow(
             [
                 idx,
-                Trial[j],
-                Het[j],
-                Anis[j],
+                t,
+                h,
+                a,
                 "Tracer",
                 s * Time[0][0],
                 (s * Time[0][0]) / initial,
@@ -100,7 +101,7 @@ csvfile.close()
 
 # plotting boxplots to see variance of breakthrough from homogeneous scenario
 tracerplot = ussp.plot_tracer(f)
-tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
+tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact_v2.png", dpi = 300, pad_inches = 0.1, bbox_inches = 'tight')
 
 import matplotlib.pyplot as plt
 import seaborn as sns
