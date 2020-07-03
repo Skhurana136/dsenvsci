@@ -5,15 +5,12 @@ Created on Thu Jul 25 12:26:03 2019
 @author: khurana
 """
 import numpy as np
-import csv
-from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import data_reader.data_processing as proc
 import analyses.saturated_transient as sta
 import plots.saturated_transient as stp
 import data_reader.reader as rdr
-import os
 
 # Saturated flow regime
 Reg = "Fast"
@@ -26,6 +23,23 @@ timdata = pd.read_csv(filenames[0], sep="\t")
 timdata.head()
 print(timdata.shape)
 print(timdata.columns)
+print(timdata.dtypes)
+
+#Identify dry-wet periods
+dind = timdata.loc[timdata['Head'] < 1.0]['Day']
+wind = timdata.loc[timdata['Head'] > 1.0]['Day']
+
+#identify consecutive lengths...
+dryduration = []
+oldvalue = 0
+count = 0
+for d in dind:
+    if (d - oldvalue > 1):
+        dryduration.append([count, d])
+    else:
+        count += 1
+    oldvalue = d
+        
 
 # fastfourier transform - power spectrum - head at inlet of input series
 N = 5475
