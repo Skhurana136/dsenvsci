@@ -34,12 +34,33 @@ dryduration = []
 oldvalue = 0
 count = 0
 for d in dind:
-    if (d - oldvalue > 1):
-        dryduration.append([count, d])
+    if ((d - oldvalue > 1) & (count > 1)):
+        print(count, d, oldvalue)
+        dryduration.append((count, oldvalue))
+        count = 0
     else:
         count += 1
     oldvalue = d
-        
+    
+#dryduration = pd.DataFrame.from_records(dryduration, columns = ["Duration", "Last_day_number"])
+
+longdryperiods = list(dryduration[i] for i in range(len(dryduration)) if (dryduration[i][0] > 60))
+
+wetduration = []
+oldvalue = 0
+count = 0
+for w in wind:
+    if ((w - oldvalue > 1) & (count > 1)):
+        print(count, w, oldvalue)
+        wetduration.append((count, oldvalue))
+        count = 0
+    else:
+        count += 1
+    oldvalue = w
+
+#wetduration = pd.DataFrame.from_records(wetduration, columns = ["Duration", "Last_day_number"])
+
+longwetperiods = list(wetduration[i] for i in range(len(wetduration)) if (wetduration[i][0] > 60))
 
 # fastfourier transform - power spectrum - head at inlet of input series
 N = 5475

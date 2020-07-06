@@ -5,7 +5,6 @@ Spyder Editor
 This is a temporary script file.
 """
 import numpy as np
-import csv
 import pandas as pd
 import data_reader.data_processing as proc
 import analyses.unsaturated_transient as uta
@@ -88,7 +87,7 @@ tracerplot.savefig("X:/Richards_flow/Tracer_studies/tracer_breakthrough_impact.p
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-for Reg in ["Equal"]:
+for Reg in ["Slow"]:
     d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
     fpre = "RF-A"
     count = 0

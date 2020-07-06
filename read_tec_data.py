@@ -27,8 +27,8 @@ Anis = list(values['Anis'] for t,values in scdict.items())
 #Anis = list(values['Anis'] for t,values in scdict.items() if t not in notlist)
 
 # Reading and storing in numpy array
-for Regime in ["Equal", "Fast"]:
-    directory = r"X:/Richards_flow/Tracer_studies/" + Regime + "AR/" + fpre #change directory as per flow regime
+for Regime in ["Slow"]:
+    directory = r"X:/Richards_flow/Tracer_studies/" + Regime + "AR_0/" + fpre #change directory as per flow regime
     for j in range(len(Trial)):
         print(str(Trial[j]))
         fwithd = directory + str(Trial[j]) + fsuf + filename #complete path to file
