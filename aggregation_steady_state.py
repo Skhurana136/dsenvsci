@@ -7,87 +7,67 @@ Created on Sun Jul  5 16:21:55 2020
 #Aggregation/Summarization of results
 
 import pandas as pd
+import numpy as np
 
-path_data = "Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/massflux_withbreakthrough_forMartin_v4_complete.csv"
-master = pd.read_csv(path_data, sep = "\t")
+path_impact_data = "Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/massflux_withbreakthrough_forMartin_v4_complete.csv"
+path_da_data = "Z:/Saturated_flow/diffusion_transient/rates_ss.csv"
+impact = pd.read_csv(path_impact_data, sep = "\t")
+da = pd.read_csv(path_da_data, sep = "\t")
 
-master.columns
-master['%del2massflux'] = master['del2massflux'] * 100
-master.Chem.unique()
-gvarnames = ["DOC", "DO", "Ammonium", "Nitrate"]
-subset = master[master['Chem'].isin (gvarnames)]
-
+impact.columns
+impact['%del2massflux'] = impact['del2massflux'] * 100
+impact.Chem.unique()
+gvarnames = ["DO", "Ammonium", "Nitrate"]
+subset = impact[impact['Chem'].isin (gvarnames)]
+gratenames = list(da.Rate_type.unique())
 Pelist = [0.1, 1, 10]
 Reglist = ["Slow", "Medium", "Fast"]
-Dalist = [100, 100, 0.1, 10]
 
 for i in range(len(Reglist)):
     subset.loc[subset.Regime == Reglist[i], 'Pe'] = Pelist[i]
-    for k in range(len(gvarnames)):
-        subset.loc[(subset.Regime == Reglist[i]) & (subset.Chem == gvarnames[k]), 'Da'] = Dalist[k]/Pelist[i]
 
-x = subset.groupby(['Regime', 'Variance', 'Anisotropy', 'Chem'])['%del2massflux'].describe()
+df = pd.merge(
+    subset,
+    da[["Trial", "Regime", "Rate_type", "Totalrate", "Microbe","Rateperbio", "Da", "Dabio", "Chem"]],
+    on=["Trial", "Regime", "Chem"]
+)
 
-subset['datime'] = subset['Da']*subset['fraction']
-bins = np.linspace (min(subset['datime']), max(subset['datime']), 1000)
+df["darec"] = 1/df["Da"]
+
+import matplotlib.pyplot as plt
+mapping = ['o','^', 's']
+plt.figure()
+for sp in list(df.Chem.unique()):
+    print (sp)
+    dfc = df[df['Chem']==sp]
+    m = mapping[list(df.Chem.unique()).index(sp)]
+    print (m)
+    plt.scatter("darec", "%del2massflux", s = 100, c = np.log(dfc["Pe"]), linewidths = 1, alpha = .7, edgecolor = 'k', cmap = "YlGnBu", marker = m, data = dfc, label = sp)
+plt.xscale("log")
+plt.yscale("log")
+plt.xlim(left = 29000)
+#plt.ylim(top = 1000)
+plt.ylabel ("Log of percentage impact")
+plt.xlabel ("Log of Da")
+plt.legend()
 
 subset['bin'] = pd.cut(subset['datime'], bins)
 subsetgroup = subset[['bin','%del2massflux']].groupby('bin').median()
 subsetgroup.plot(kind='bar')
 dagroup = subset.groupby(['datime'])['%del2massflux'].describe()
 
-import matplotlib.pyplot as plt
-plt.scatter(subset['datime'], subset['Da'], s=subset['del2massflux']*100, alpha=0.5)
-plt.yscale('log')
-plt.xscale('log')
-plt.ylim([0.002,1200])
-plt.xlim([0.002,1200])
-plt.ylabel("Damkohler number")
-plt.xlabel("Damkohler and time produce")
-
-plt.scatter(subset['Da'], subset['Pe'], s=subset['del2massflux']*1000, alpha=0.5)
-plt.yscale('log')
-plt.xscale('log')
-plt.ylim([0.002,12])
-plt.xlim([0.002,1200])
-plt.ylabel("Peclet number")
-plt.xlabel("Damkohler")
-
-plt.scatter(subset['datime'], subset['Chem'], s=subset['del2massflux']*1000, alpha=0.5)
-#plt.yscale('log')
-plt.xscale('log')
-#plt.ylim([0.002,12])
-plt.xlim([0.002,1200])
-plt.ylabel("Peclet number")
-plt.xlabel("Damkohler and time product")
-
-from pandas.tools.plotting import parallel_coordinates
-plt.figure()
-parallel_coordinates(subset, 'Chem', colormap=plt.get_cmap("Set2"))
-
-
-plt.show()
-
 #Descriptive statistice
 group.Chem.describe
 
 import seaborn as sns
-import matplotlib.pyplot as plt
-
 sns.set_style("white")
-sns.kdeplot(subset['%ofhomogeneous'], subset['%del2massflux'])
+sns.kdeplot(df['%ofhomogeneous'], df['%del2massflux'])
 #sns.plt.show()
  
 # Custom it with the same argument as 1D density plot
-sns.kdeplot(subset['Da'], subset['%del2massflux'], cmap="Reds", shade=True, bw=.15)
+sns.kdeplot(df['darec'], df['%del2massflux'], cmap="Reds", shade=True, bw=.15)
 plt.ylim([30,110])
 plt.xlim([0,200])
-
- 
-# Some features are characteristic of 2D: color palette and wether or not color the lowest range
-sns.kdeplot(df.sepal_width, df.sepal_length, cmap="Blues", shade=True, shade_lowest=True, )
-sns.plt.show()
-
 
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt

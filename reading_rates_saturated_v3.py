@@ -206,7 +206,7 @@ biomass_path_data = r"Y:\Home\khurana\4. Publications\Restructuring\Paper1\Figur
 biomass = pd.read_csv(biomass_path_data, sep = '\t')
 biomass.columns
 
-microbes = ["Active fixed Aerobes", "Active fixed Ammonia oxidizers", "Active Nitrate reducers"]
+microbes = ["Active fixed Aerobes", "Active fixed Ammonia oxidizers", "Active fixed Nitrate reducers"]
 
 biomass = biomass[biomass['Chem'].isin (microbes)]
 biomass.shape
@@ -223,25 +223,33 @@ gratenames = [
     "Immobile ammonia respiration",
     "Immobile nitrate respiration",
 ]
-
+gvarnames = ["DO", "Ammonium", "Nitrate"]
 
 Regimes = ["Slow", "Equal", "Fast"]
-ratesum = np.zeros([len(Trial) * len(Regimes) * len(respindx), 7])
-
+velocities = [0.00038, 0.0038, 0.038]
 # Calculate bulk Damkohler numbers in the domain
 
 row = []
-for Reg in Regimes:
-    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/" 
+for vel, Reg in zip(velocities, Regimes):
+    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+    if Reg == "Equal":
+        Reg = "Medium"
     for t in Trial:
         print(t)
         filepath = directory + fpre + str(t) + fsuf + filename
         M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
-        for bio,i in zip(microbes, range(len(respindx))):
-#            idx = Regimes.index(Reg) * len(Trial) * len(respindx) + Trial.index(t) * len(respindx) + respindx.index(i)
-            biototal = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bio)]['Total_biomass']
+        for bio,i,c in zip(microbes, range(len(respindx)), gvarnames):
+            biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bio)]
+            biototal = biorow.Total_biomass.iloc[0]
             ratesum = sum(M[:, i])
-            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], ratesum, bio, ratesum/biototal])
+            da = vel/ratesum
+            dabio = vel*biototal/ratesum
+            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], ratesum, bio, ratesum/biototal, da, dabio, c])
+
+df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Totalrate', 'Microbe', 'Rateperbio', 'Da', 'Dabio', 'Chem'])
+
+
+df.to_csv(r"Z:\Saturated_flow\diffusion_transient\rates_ss.csv", sep = '\t')
 
 # Plot Damkohler numbers in the domain
 
