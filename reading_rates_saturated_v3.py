@@ -5,9 +5,10 @@ Created on Wed Aug  7 18:05:45 2019
 @author: khurana
 """
 
+import pandas as pd
+import data_reader.data_processing as proc
+
 import numpy as np
-import csv
-import Pythonfunctions_SK as sk
 import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -15,187 +16,75 @@ from matplotlib.colors import LogNorm
 import math
 from matplotlib.ticker import FuncFormatter
 
-d = r"Z:\Saturated_flow\diffusion_transient\EqualAR_0\/"
-fpre = "NS-A"
-masterTrial = [
-    "H",
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59,
-    60,
-    61,
-    62,
-    63,
-    64,
-    65,
-    66,
-    67,
-    68,
-    69,
-    70,
-    71,
-    72,
-    73,
-    74,
-    75,
-    76,
-    77,
-    78,
-    79,
-    80,
-    81,
-    82,
-    83,
-    84,
-]
-masterHet = [
-    0,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    10,
-    10,
-    10,
-    0.1,
-    0.1,
-    0.1,
-    1,
-    1,
-    1,
-    5,
-    5,
-    5,
-    10,
-    10,
-    10,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-]
-masterAnis = [
-    1,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-    2,
-    5,
-    10,
-]
-fsuf = r"/"
 
+# Saturated flow regime
+Reg = "Fast"
+directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+fpre = "NS-A"
+fsuf = r"/"
+gw = 1
 filename = "ratesAtFinish.dat"
 
-# setup what we really want to investigate
+scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneous scenarios that were run
+
 # Default:
-# setup what we really want to investigate
-# Default:
-Trial = masterTrial
-Het = masterHet
-Anis = masterAnis
+Trial = list(t for t,values in scdict.items())
+Het = list(values['Het'] for t,values in scdict.items())
+Anis = list(values['Anis'] for t,values in scdict.items())
 
-# Variations:
-# Trial = masterTrial[masterTrial.index(37):]
-# Het = masterHet[masterTrial.index(37):]
-# Anis = masterAnis[masterTrial.index(37):]
-
-# Trial = ['H']
-# Het = [0]
-# Anis = [1]
-# for k in range(len(masterHet)):
-#    if (masterHet[k]>4):
-#        Trial.append(masterTrial[k])
-#        Het.append(masterHet[k])
-#        Anis.append(masterAnis[k])
-
+doc1 = 10 - gw
+dox1 = 11 - gw
+Amm1 = 12 - gw
+nitra1 = 17 - gw
+sulpha1 = 22 - gw
+tr1 = 29 - gw
+Bfo1 = 8 - gw
+Bfn1 = 15 - gw
+Bfs1 = 20 - gw
+Bfa1 = 25 - gw
+Bmo1 = 9 - gw
+Bmn1 = 16 - gw
+Bms1 = 21 - gw
+Bma1 = 26 - gw
+Bifo1 = 13 - gw
+Bifn1 = 18 - gw
+Bifs1 = 23 - gw
+Bifa1 = 27 - gw
+Bimo1 = 14 - gw
+Bimn1 = 19 - gw
+Bims1 = 24 - gw
+Bima1 = 28 - gw
+POM1 = 30 - gw
+vely = 5
+velx = 4
+AFbiomassvars = [
+    Bfo1,
+    Bfa1,
+    Bfn1,
+    Bmo1,
+    Bma1,
+    Bmn1,
+    Bifo1,
+    Bifa1,
+    Bifn1,
+    Bimo1,
+    Bima1,
+    Bimn1,
+]
+AFbiomassgvarnames = [
+    "Active fixed Aerobes",
+    "Active fixed Ammonia oxidizers",
+    "Active fixed Nitrate reducers",
+    "Active mobile Aerobes",
+    "Active mobile Ammonia oxidizers",
+    "Active mobile Nitrate reducers",
+    "Inactive fixed Aerobes",
+    "Inactive fixed Ammonia oxidizers",
+    "Inactive fixed Nitrate reducers",
+    "Inactive mobile Aerobes",
+    "Inactive mobile Ammonia oxidizers",
+    "Inactive mobile Nitrate reducers",
+]
 listofcolumns = [6, 12]
 for i in range(67):
     listofcolumns.append(i + 18)
@@ -204,10 +93,10 @@ ratenames = [
     "x_m",
     "Y",
     "Z",
-    "Fixederoresp",
+    "Fixedaeroresp",
     "Mobaeroresp",
     "Fixedaerogwth",
-    "Mobileaerogwth",
+    "Mobaerogwth",
     "Fixedactaerodett",
     "Fixedinaerodett",
     "Mobactaeroattach",
@@ -271,30 +160,89 @@ ratenames = [
     "Hydrolysis",
 ]
 
-gw = 1
-Bfo1 = 8 - gw - 3
-Bfn1 = 15 - gw - 3
-Bfs1 = 20 - gw - 3
-Bfa1 = 25 - gw - 3
-Bmo1 = 9 - gw - 3
-Bmn1 = 16 - gw - 3
-Bms1 = 21 - gw - 3
-Bma1 = 26 - gw - 3
-Bifo1 = 13 - gw - 3
-Bifn1 = 18 - gw - 3
-Bifs1 = 23 - gw - 3
-Bifa1 = 27 - gw - 3
-Bimo1 = 14 - gw - 3
-Bimn1 = 19 - gw - 3
-Bims1 = 24 - gw - 3
-Bima1 = 28 - gw - 3
+respindx = np.array(
+    [
+        ratenames.index("Fixedaerogwth"),
+        ratenames.index("Mobaerogwth"),
+        ratenames.index("Fixednitragwth"),
+        ratenames.index("Mobnitragwth"),
+        ratenames.index("Fixedsulphagwth"),
+        ratenames.index("Mobsulphagwth"),
+        ratenames.index("Fixedammgwth"),
+        ratenames.index("Mobammgwth"),
+    ]
+)
+respindx = np.array(
+    [
+        ratenames.index("Fixedaerogwth"),
+        ratenames.index("Fixedammgwth"),
+        ratenames.index("Fixednitragwth"),
+    ]
+)
+respindx = np.array(
+    [
+        ratenames.index("Fixedaeroresp"),
+        ratenames.index("Mobaeroresp"),
+        ratenames.index("Fixednitraresp"),
+        ratenames.index("Mobnitraresp"),
+        ratenames.index("Fixedsulpharesp"),
+        ratenames.index("Mobsulpharesp"),
+        ratenames.index("Fixedammresp"),
+        ratenames.index("Mobammresp"),
+    ]
+)
+gratenames = [
+    "Immobile aerobic respiration",
+    "Mobile aerobic respiration",
+    "Immobile nitrate respiration",
+    "Mobile nitrate respiration",
+    "Immobile sulphate respiration",
+    "Mobile sulphate respiration",
+    "Immobile ammonia respiration",
+    "Mobile ammonia respiration",
+]
 
-gratenames = ["Aerobic", "Nitrate", "Ammonia"]
-respindx = np.array([3, 19, 35, 51])
-respindx = np.array([7, 8, 23, 24])
-vars = [Bfo1, Bifo1, Bfn1, Bifn1]
-summ = np.zeros([len(Trial), len(respindx)])
-act = np.zeros([len(Trial), 1581, len(respindx)])
+biomass_path_data = r"Y:\Home\khurana\4. Publications\Restructuring\Paper1\Figurecodes\biomass_withbreakthrough_forMartin_v4_complete.csv"
+biomass = pd.read_csv(biomass_path_data, sep = '\t')
+biomass.columns
+
+microbes = ["Active fixed Aerobes", "Active fixed Ammonia oxidizers", "Active Nitrate reducers"]
+
+biomass = biomass[biomass['Chem'].isin (microbes)]
+biomass.shape
+
+respindx = np.array(
+    [
+        ratenames.index("Fixedaeroresp"),
+        ratenames.index("Fixedammresp"),
+        ratenames.index("Fixednitraresp")
+    ]
+)
+gratenames = [
+    "Immobile aerobic respiration",
+    "Immobile ammonia respiration",
+    "Immobile nitrate respiration",
+]
+
+
+Regimes = ["Slow", "Equal", "Fast"]
+ratesum = np.zeros([len(Trial) * len(Regimes) * len(respindx), 7])
+
+# Calculate bulk Damkohler numbers in the domain
+
+row = []
+for Reg in Regimes:
+    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/" 
+    for t in Trial:
+        print(t)
+        filepath = directory + fpre + str(t) + fsuf + filename
+        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
+        for bio,i in zip(microbes, range(len(respindx))):
+#            idx = Regimes.index(Reg) * len(Trial) * len(respindx) + Trial.index(t) * len(respindx) + respindx.index(i)
+            biototal = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bio)]['Total_biomass']
+            ratesum = sum(M[:, i])
+            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], ratesum, bio, ratesum/biototal])
+
 # Plot Damkohler numbers in the domain
 
 
