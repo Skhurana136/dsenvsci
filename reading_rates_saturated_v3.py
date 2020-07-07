@@ -241,15 +241,15 @@ for vel, Reg in zip(velocities, Regimes):
         for bio,i,c in zip(microbes, range(len(respindx)), gvarnames):
             biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bio)]
             biototal = biorow.Total_biomass.iloc[0]
-            ratesum = sum(M[:, i])
-            da = vel/ratesum
-            dabio = vel*biototal/ratesum
+            ratesum = np.mean(M[:, i])
+            da = biorow.Breakthroughtime.iloc[0]*ratesum
+            dabio = biorow.Breakthroughtime.iloc[0]*ratesum/(biototal)
             row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], ratesum, bio, ratesum/biototal, da, dabio, c])
 
 df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Totalrate', 'Microbe', 'Rateperbio', 'Da', 'Dabio', 'Chem'])
 
 
-df.to_csv(r"Z:\Saturated_flow\diffusion_transient\rates_ss.csv", sep = '\t')
+df.to_csv(r"Z:\Saturated_flow\diffusion_transient\rates_median_ss.csv", sep = '\t')
 
 # Plot Damkohler numbers in the domain
 
