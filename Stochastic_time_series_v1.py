@@ -8,7 +8,6 @@ Created on Tue Aug 27 16:02:44 2019
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-from datetime import datetime
 import seaborn as sns
 import scipy
 from gstools import SRF, Exponential
@@ -88,7 +87,8 @@ NewK = Kratio * Newmu
 mu = 1
 Vratio = [1, 2, 5]
 V = Vratio * mu
-T = range(365 * 15)
+#T = range(365 * 15)
+T = range(365 * 1000) #trying a longer time series to check FFT results
 counter = 0
 figs = [30, 20]
 for uservar in V:
@@ -156,7 +156,7 @@ for uservar in V:
     print(np.mean(field1), np.var(field1), np.var(field1) / np.mean(field1))
     print(np.mean(field2), np.var(field2), np.var(field2) / np.mean(field2))
     print(np.mean(field), np.var(field), np.var(field) / np.mean(field))
-    fname = "Exponential_" + str(uservar) + "_15years.csv"
+    fname = "Exponential_" + str(uservar) + "_1000years.csv"
     csvfile = open(fname, "w")
     writer = csv.writer(
         csvfile,

@@ -202,6 +202,22 @@ gratenames = [
     "Mobile ammonia respiration",
 ]
 
+gvarnames = ["DO", "Ammonium", "Nitrate"]
+
+Regimes = ["Slow", "Equal", "Fast"]
+
+AFbiomassvars = [
+    Bfo1,
+    Bfa1,
+    Bfn1]
+
+AFbiomassgvarnames = [
+    "Active fixed Aerobes",
+    "Active fixed Ammonia oxidizers",
+    "Active fixed Nitrate reducers",
+]
+# Calculate bulk Damkohler numbers in the domain
+
 biomass_path_data = r"Y:\Home\khurana\4. Publications\Restructuring\Paper1\Figurecodes\biomass_withbreakthrough_forMartin_v4_complete.csv"
 biomass = pd.read_csv(biomass_path_data, sep = '\t')
 biomass.columns
@@ -210,6 +226,30 @@ microbes = ["Active fixed Aerobes", "Active fixed Ammonia oxidizers", "Active fi
 
 biomass = biomass[biomass['Chem'].isin (microbes)]
 biomass.shape
+
+row = []
+for Reg in Regimes:
+    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+    if Reg == "Equal":
+        Reg = "Medium"
+    for t in Trial:
+        print(t)
+        filepath = directory + fpre + str(t) + fsuf + filename
+        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
+        df = np.load(directory + fpre + t + fsuf + fpre + t + "_df.npy")
+        for bioindx, bioname, i,c in zip(AFbiomassvars, microbes, range(len(respindx)), gvarnames):
+            biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bioname)]
+            meanrate = np.mean(M[:, i])
+            meanbiomass = np.mean(df[bioindx, - 1, :, :])
+            traveltime = biorow.Breakthroughtime.iloc[0]
+            da = traveltime*meanrate
+            dabio = traveltime*meanrate/meanbiomass
+            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], meanrate, bioname, meanbiomass, meanrate/meanbiomass, da, dabio, c])
+
+df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Meanrate', 'Microbe', 'Meanbiomassconc', 'Rateperbio', 'Da', 'Dabio', 'Chem'])
+
+
+df.to_csv(r"Z:\Saturated_flow\diffusion_transient\rates_biomassconc_mean_ss.csv", sep = '\t')
 
 respindx = np.array(
     [

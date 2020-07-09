@@ -27,3 +27,20 @@ def plot_tracer(filename):
     plt.title("Time taken for tracer breakthrough")
 
     return plt
+
+
+def scatter (data, Xvariable, Xlabel, Yvariable, Ylabel, scaling):
+    plt.scatter(Xvariable, Yvariable, s = 100, linewidths = 1, alpha = .7, edgecolor = 'k', data = data)
+    if scaling == "Logx":
+        plt.xscale("log")
+    elif scaling == "Logy":
+        plt.yscale("log")
+    elif scaling == "True":
+        plt.xscale("log")
+        plt.yscale("log")
+        plt.axhline(10, linestyle = '--', color = 'gray')
+        plt.axhline(100, linestyle = '--', color = 'gray')
+    plt.ylabel (Ylabel)
+    plt.xlabel (Xlabel)
+    
+    return plt

@@ -14,9 +14,9 @@ import data_reader.reader as rdr
 
 # Saturated flow regime
 Reg = "Fast"
-directory = r"Z:/Saturated_flow/diffusion_transient/time_series_"
+directory =  "Exponential_" + t + "_100years.csv"
 timseries = ["1", "2", "5"]
-filenames = [directory + t + ".csv" for t in timseries]  # Setting up file names
+filenames = ["Exponential_" + t + "_1000years.csv" for t in timseries]  # Setting up file names
 
 # Load data
 timdata = pd.read_csv(filenames[0], sep="\t")
@@ -61,6 +61,34 @@ for w in wind:
 #wetduration = pd.DataFrame.from_records(wetduration, columns = ["Duration", "Last_day_number"])
 
 longwetperiods = list(wetduration[i] for i in range(len(wetduration)) if (wetduration[i][0] > 60))
+
+# fastfourier transform - power spectrum - head at inlet of input series - 100 years
+N = 365000
+dt = 1 / 365
+fig, axes = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True)
+plt.suptitle("FFT: Head at inlet")
+count = 0
+for f in filenames:
+    timdata = pd.read_csv(f, sep=",")
+    print(filenames.index(f))
+    y = timdata.Ratio
+    normheadin = (y - np.mean(y)) / np.std(y)
+    fhat = np.fft.fft(y, N)
+    PSD = fhat * np.conj(fhat) / N
+    freq = (1 / (N * dt)) * np.arange(N)
+    L = np.arange(1, np.floor(N / 2), dtype="int")
+    print(np.shape(y))
+    axes.flat[count].plot(freq[L], PSD[L], color="r", LineWidth=2, label="Noisy")
+    #    axes.flat[count].set_xlim((0,3))
+    axes.flat[count].grid()
+    axes.flat[count].set_title("Variance: " + timseries[filenames.index(f)])
+    axes.flat[count].set_ylabel("Power")
+    axes.flat[count].set_xlabel("Frequency (per year)")
+    count = count + 1
+plt.savefig(
+    directory + "fft__inputhead_trimmed.png", dpi=300, bbox_inches="tight", pad_inches=0
+)
+
 
 # fastfourier transform - power spectrum - head at inlet of input series
 N = 5475

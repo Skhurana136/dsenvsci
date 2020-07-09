@@ -19,7 +19,23 @@ from analyses.saturated_transient import (
     calcconcmasstimeX,
 )
 from data_reader.data_processing import tracerstudies
+import matplotlib.patches as mpatches
+import matplotlib as mpl
 
+FlowRegimes = ["Slow", "Medium", "Fast"]
+markerseries = ["d", "^", "o"]
+defaultcolors = ["indianred", "g", "steelblue"]
+Redscmap = mpl.cm.Reds(np.linspace(0, 1, 30))
+Greenscmap = mpl.cm.Greens(np.linspace(0, 1, 30))
+Bluescmap = mpl.cm.Blues(np.linspace(0, 1, 30))
+Redscmap = mpl.colors.ListedColormap(Redscmap[10:, :-1])
+Greenscmap = mpl.colors.ListedColormap(Greenscmap[10:, :-1])
+Bluescmap = mpl.colors.ListedColormap(Bluescmap[10:, :-1])
+colseries = [Redscmap, Greenscmap, Bluescmap]
+red_patch = mpatches.Patch(color="indianred", label="Slow flow")
+green_patch = mpatches.Patch(color="g", label="Medium flow")
+blue_patch = mpatches.Patch(color="steelblue", label="Fast flow")
+patchlist = [red_patch, green_patch, blue_patch]
 
 def make_patch_spines_invisible(ax):
     ax.set_frame_on(True)
@@ -2495,3 +2511,27 @@ def boxV_Abio(dataset1, dataset2, dataset3, imgsize):
     fig.subplots_adjust(left=0.15, top=0.9)
 
     return fig
+
+def scatter_chem_regime (data, Xvariable, Xlabel, Yvariable, Ylabel, scaling):
+    fig,ax = plt.subplots()
+    for sp in list(data['Chem'].unique()):
+        for r in list(data['Regime'].unique()):
+            dfc = data[(data['Chem']==sp) & (data['Regime']==r)]
+            m = markerseries[list(data['Chem'].unique()).index(sp)]
+            plt.scatter(Xvariable, Yvariable, s = 100, c = defaultcolors[FlowRegimes.index(r)], linewidths = 1, 
+                                                                         alpha = .7, edgecolor = 'k', data = dfc,
+                                                                         marker = m, label = sp + " in " + r + " regime")
+    if scaling == "Logx":
+        plt.xscale("log")
+    elif scaling == "Logy":
+        plt.yscale("log")
+    elif scaling == "True":
+        plt.xscale("log")
+        plt.yscale("log")
+        plt.axhline(10, linestyle = '--', color = 'gray')
+        plt.axhline(100, linestyle = '--', color = 'gray')
+    plt.ylabel (Ylabel)
+    plt.xlabel (Xlabel)
+    plt.legend()
+    
+    return plt

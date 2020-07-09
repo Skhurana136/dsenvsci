@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 path_impact_data = "Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/massflux_withbreakthrough_forMartin_v4_complete.csv"
-path_da_data = "Z:/Saturated_flow/diffusion_transient/rates_median_ss.csv"
+path_da_data = "Z:/Saturated_flow/diffusion_transient/Da_mean_ss.csv"
 impact = pd.read_csv(path_impact_data, sep = "\t")
 da = pd.read_csv(path_da_data, sep = "\t")
 
@@ -26,9 +26,11 @@ Reglist = ["Slow", "Medium", "Fast"]
 for i in range(len(Reglist)):
     subset.loc[subset.Regime == Reglist[i], 'Pe'] = Pelist[i]
 
+da.columns
+
 df = pd.merge(
     subset,
-    da[["Trial", "Regime", "Rate_type", "Totalrate", "Microbe","Rateperbio", "Da", "Dabio", "Chem"]],
+    da[["Trial", "Regime", "Rate_type", "Meanrate", "Microbe", "Da", "Dabio", "Chem"]],
     on=["Trial", "Regime", "Chem"]
 )
 
@@ -40,46 +42,77 @@ for Reg in list(df.Regime.unique()):
         baseDa = df[(df.Regime == Reg) & (df.Trial == 'H') & (df.Chem == c)].Da.iloc[0]
         baseDabio = df[(df.Regime == Reg) & (df.Trial == 'H') & (df.Chem == c)].Dabio.iloc[0]
         basedarec = df[(df.Regime == Reg) & (df.Trial == 'H') & (df.Chem == c)].darec.iloc[0]
-#        df = df[(df.Regime == Reg) & (df.Chem == c)]
         df.loc[(df.Regime == Reg) & (df.Chem == c), 'impactDa'] = df[(df.Regime == Reg) & (df.Chem == c)].Da/baseDa
         df.loc[(df.Regime == Reg) & (df.Chem == c), 'impactDabio'] = df[(df.Regime == Reg) & (df.Chem == c)].Dabio/baseDabio
         df.loc[(df.Regime == Reg) & (df.Chem == c), 'impactdarec'] = df[(df.Regime == Reg) & (df.Chem == c)].darec/basedarec
         print(df.shape)
 
-df.to_csv("Z:/Saturated_flow/diffusion_transient/median_da_impact.csv")
+df.to_csv("Z:/Saturated_flow/diffusion_transient/mean_da_biomassconc_impact.csv", sep = "\t")
 
+finaldata = pd.read_csv("Z:/Saturated_flow/diffusion_transient/mean_da_biomassconc_impact.csv", sep = "\t") 
+import plots.saturated_steady_state as sssp
 import matplotlib.pyplot as plt
-mapping = ['o','^', 's']
-plt.figure()
-for sp in list(df.Chem.unique()):
-    print (sp)
-    dfc = df[df['Chem']==sp]
-    m = mapping[list(df.Chem.unique()).index(sp)]
-    print (m)
-    plt.scatter("impactDa", "del2massflux", s = 100, c =np.log(dfc["Pe"]), linewidths = 1, alpha = .7, edgecolor = 'k', cmap = "YlGnBu", data = dfc, marker = m, label = sp)
-#plt.xscale("log")
-#plt.yscale("log")
-#plt.xlim(left = 0.01)
-#plt.ylim(bottom = 0.001)
-#plt.axhline(0.1, linestyle = '--', color = 'gray')
-#plt.axhline(1, linestyle = '--', color = 'gray')
-#plt.axhline(10, linestyle = '--', color = 'gray')
-#plt.axhline(100, linestyle = '--', color = 'gray')
-#plt.axhline(1000, linestyle = '--', color = 'gray')
-plt.ylabel ("Impact on Damkohler number")
-plt.xlabel ("Spatial heterogeneity")
-plt.legend()
+#Show variation of Da with spatial heterogeneity
+ax1 = plt.subplot(321)
+ax1 = sssp.scatter_chem_regime (finaldata, "fraction", "Spatial heterogeneity", "Dabio", "Normalized Da", "Logy")
+plt.ylim(bottom = 0.01)
+plt.title("Da# (normalized by biomass) with spatial heterogeneity")
+
+ax2 = plt.subplot(322)
+ax2 = sssp.scatter_chem_regime (finaldata, "fraction", "Spatial heterogeneity", "impactDabio", "Impact on normalized Da", "None")
+plt.xlim(left = 0.01)
+plt.title("Impact on Da (normalized by that in base case) with spatial heterogeneity")
+
+ax3 = plt.subplot(323)
+ax3 = sssp.scatter_chem_regime (finaldata, "fraction", "Spatial heterogeneity", "%del2massflux", "Impact on O, N removal", "None")
+plt.xlim(left = 0.01)
+plt.title("Impact on chemical removal (normalized by that in base case) with spatial heterogeneity")
+
+ax4 = plt.subplot(324)
+ax4 = sssp.scatter_chem_regime (finaldata, "Dabio", "Normalized Da", "%del2massflux", "Impact on O, N removal", "Logx")
+plt.xlim(left = 0.01)
+plt.title("Impact on chemical removal (normalized by that in base case) with normalized Da")
+
+ax5 = plt.subplot(325)
+ax5 = sssp.scatter_chem_regime (finaldata, "impactDabio", "Impact on normalized Da", "%del2massflux", "Impact on O, N removal (%)", "True")
+plt.xlim(left = 0.001)
+plt.title("Impact on chemical removal (normalized by that in base case) with impact on normalized Da")
+  
+sssp.scatter_chem_regime (finaldata, "Dabio", "Normalized Da", "%del2massflux", "Normalized impact on removal (%)", "None")
+plt.xlim(left = 0.01)
+
+import plots.general_plots as gp
+
+gp.scatter(finaldata, "fraction", "Spatial heterogeneity", "%del2massflux", "Impact on O, N removal", "None")
+plt.xlim(left = 0.01)
+plt.title("Impact on chemical removal (normalized by that in base case) with spatial heterogeneity")
+
+gp.scatter (finaldata, "fraction", "Spatial heterogeneity", "Dabio", "Normalized Da", "Logy")
+plt.ylim(bottom = 0.01)
+plt.title("Da# (normalized by biomass) with spatial heterogeneity")
+
+gp.scatter (finaldata, "fraction", "Spatial heterogeneity", "impactDabio", "Impact on normalized Da", "None")
+plt.xlim(left = 0.01)
+plt.title("Impact on Da (normalized by that in base case) with spatial heterogeneity")
+
+gp.scatter (finaldata, "Dabio", "Normalized Da", "%del2massflux", "Impact on O, N removal", "Logx")
+plt.xlim([0.001, 1000])
+plt.title("Impact on chemical removal (normalized by that in base case) with normalized Da")
+
+gp.scatter (finaldata, "impactDabio", "Impact on normalized Da", "%del2massflux", "Impact on O, N removal", "True")
+plt.xlim(left = 0.001)
+plt.title("Impact on chemical removal (normalized by that in base case) with impact on normalized Da")
 
 #histogram
 
 import seaborn as sns
-subset = df[["fraction", "%del2massflux", "Da", "impactDa", "Regime", "Chem"]]
-fig = sns.pairplot(subset, kind="scatter", hue="Chem", markers=["o", "s", "D"], palette="Set2")
+subset = df[["fraction", "%del2massflux", "Dabio", "impactDabio", "Regime", "Chem"]]
+fig = sns.pairplot(subset, kind="scatter", hue="Regime", markers=["o", "s", "D"], palette="Set2")
 fig.savefig("Z:/Saturated_flow/diffusion_transient/cycling-da.png", pad_inches = 0.1)
 
-subset["DaLog"] = np.log(subset["Da"])
+subset["DaLog"] = np.log(subset["Dabio"])
 subset["%del2massfluxLog"] = np.log(subset["%del2massflux"])
-subset2 = subset[["fraction", "%del2massfluxLog", "DaLog", "impactDa","Regime", "Chem"]]
+subset2 = subset[["fraction", "%del2massfluxLog", "DaLog", "impactDabio","Regime", "Chem"]]
 # Basic correlogram
 fig = sns.pairplot(subset2, kind="scatter", hue="Chem", markers=["o", "s", "D"], palette="Set2")
 fig.savefig("Z:/Saturated_flow/diffusion_transient/cycling-da-log.png", pad_inches = 0.1)
@@ -91,27 +124,3 @@ dagroup = df.groupby(['darec'])['%del2massflux'].describe()
 
 #Descriptive statistice
 group.Chem.describe
-
-import seaborn as sns
-sns.set_style("white")
-sns.kdeplot(df['%ofhomogeneous'], df['%del2massflux'])
-#sns.plt.show()
- 
-# Custom it with the same argument as 1D density plot
-sns.kdeplot(df['darec'], df['%del2massflux'], cmap="Reds", shade=True, bw=.15)
-plt.ylim([30,110])
-plt.xlim([0,200])
-
-from mpl_toolkits import mplot3d
-
-subset = df.sort_values(by = 'fraction')
-data = subset[['del2massflux', 'Pe', 'fraction']]
-cont_data = pd.pivot_table(data, values = 'del2massflux',
-                              index = 'Pe',
-                              columns = 'fraction')
-
-x = list(df.fraction.unique())
-y = list(df.Pe.unique())
-fig = plt.figure()
-ax = plt.axes(projection = '3d')
-ax.contour3D (x, y, cont_data, cmap = 'binary')
