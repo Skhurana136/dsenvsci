@@ -103,6 +103,13 @@ gp.scatter (finaldata, "impactDabio", "Impact on normalized Da", "%del2massflux"
 plt.xlim(left = 0.001)
 plt.title("Impact on chemical removal (normalized by that in base case) with impact on normalized Da")
 
+#Kerneldensityplot
+sns.kdeplot()
+subset = finaldata[(finaldata["impactDabio"]<104) & (finaldata["%del2massflux"]<104)]
+plt.hist2d(subset["impactDabio"], subset["%del2massflux"], bins=(50,50), cmap=plt.cm.Greys)
+plt.colorbar()
+plt.show()
+
 #histogram
 
 import seaborn as sns

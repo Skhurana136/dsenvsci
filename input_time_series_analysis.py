@@ -63,7 +63,7 @@ for w in wind:
 longwetperiods = list(wetduration[i] for i in range(len(wetduration)) if (wetduration[i][0] > 60))
 
 # fastfourier transform - power spectrum - head at inlet of input series - 100 years
-N = 365000
+N = 36500
 dt = 1 / 365
 fig, axes = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True)
 plt.suptitle("FFT: Head at inlet")
