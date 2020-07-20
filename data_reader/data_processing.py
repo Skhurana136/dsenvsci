@@ -148,6 +148,7 @@ def masterscenarios():
     return masterdictionary
 
 def masterrates(scenariotype):
+    #master list of rates captured in the reaction network with an additional rate for DO diffusion in unsaturated flow regimes
     masterrates = [
     "x_m",
     "Y",
@@ -223,4 +224,47 @@ def masterrates(scenariotype):
         masterrates.append("DOdiffusion")
     
     return masterrates
+
+def masterdissolvedspecies():
+    #keys in this master dictionary refer to dissolved chemical species names
+    #Var refers to the variable name used to reference in Tecplot files
+    #TecIndex refers to the index in the array/tecplot output column for the data of that chemical species
+    mastervariabledict = {
+            'DOC': {"Var": "doc1", "TecIndex": 10, "Graphname" : 'DOC'},
+            'DO': {"Var": "dox1", "TecIndex": 11, "Graphname" : 'DO'},
+            'Ammonium': {"Var": "Amm1", "TecIndex": 12, "Graphname" : 'Ammonium'},
+            'Nitrate': {"Var": "nitra1", "TecIndex": 17, "Graphname" : 'Nitrate'},
+            'Sulphate': {"Var": "sulpha1", "TecIndex": 22, "Graphname" : 'Sulphate'},
+            'Particulate organic matter': {"Var": "POM1", "TecIndex": 30, "Graphname" : 'Particulate organic matter'},
+            }
     
+    return mastervariabledict
+
+def mastermicrobialspecies():
+    #keys in this master dictionary refer to microbial species names
+    #Var refers to the variable name used to reference in Tecplot files
+    #TecIndex refers to the index in the array/tecplot output column for the data of that chemical species
+    #State refers to the level of activity
+    #Location refers to if the microbial species is mobile or immobile on the matrix
+    #Graphname refers to graph output names
+
+    mastermicrobesdict = {
+            'Immobile active aerobic degraders': {"Var": "Bfo1", "TecIndex": 8, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Aerobic degraders'},
+            'Immobile active nitrate reducers': {"Var": "Bfn1", "TecIndex": 15, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Nitrate reducers'},
+            'Immobile active sulphate reducers': {"Var": "Bfs1", "TecIndex": 20, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Sulphate reducers'},
+            'Immobile active ammonia oxidizers': {"Var": "Bfa1", "TecIndex": 25, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Ammonia oxidizers'},
+            'Mobile active aerobic degraders': {"Var": "Bmo1", "TecIndex": 9, "State" : "Active", "Location" : "Mobile", "Graphname" : 'Aerobic degraders'},
+            'Mobile active nitrate reducers': {"Var": "Bmn1", "TecIndex": 16, "State" : "Active", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
+            'Mobile active sulphate reducers': {"Var": "Bms1", "TecIndex": 21, "State" : "Active", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
+            'Mobile active ammonia oxidizers': {"Var": "Bma1", "TecIndex": 26, "State" : "Active", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
+            'Immobile inactive aerobic degraders': {"Var": "Bifo1", "TecIndex": 13, "State" : "Inactive", "Location" : "Immobile", "Graphname" : 'Aerobic degraders'},
+            'Immobile inactive nitrate reducers': {"Var": "Bifn1", "TecIndex": 18, "State" : "Inactive", "Location" : "Immobile", "Graphname" : 'Nitrate reducers'},
+            'Immobile inactive sulphate reducers': {"Var": "Bifs1", "TecIndex": 23, "State" : "Inactive", "Location" : "Immobile", "Graphname" : 'Sulphate reducers'},
+            'Immobile inactive ammonia oxidizers': {"Var": "Bifa1", "TecIndex": 27, "State" : "Inactive", "Location" : "Immobile", "Graphname" : 'Ammonia oxidizers'},
+            'Mobile inactive aerobic degraders': {"Var": "Bimo1", "TecIndex": 14, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Aerobic degraders'},
+            'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
+            'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
+            'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
+            }
+    
+    return mastermicrobesdict
