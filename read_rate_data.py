@@ -73,25 +73,34 @@ gratenames = [
     "Hydrolysis"
     ]
     
-#Reading rates of interest, saving in numpy array, calculating volume averaged rates
-row = []
+#Reading rates of interest and saving in numpy array
+
 for Reg in Regimes:
     directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
-    if (Reg == "Equal"):
-        Reg = "Medium"
     for t in Trial:
         print(t)
         filepath = directory + fpre + str(t) + fsuf + filename
         M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
         ratesarray = rdr.Converttoarray_1581(M, "rates")
         np.save(directory + fpre + str(t) + fsuf + fpre + str(t) + "_resp_growth_hydrolysis_rates.npy", ratesarray)
+        
+#Calculating mean rates
+row = []        
+for Reg in Regimes:
+    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+    if (Reg == "Equal"):
+        Reg = "Medium"
+    for t in Trial:
+        print(t)
+        ratesarray = np.load(directory + fpre + str(t) + fsuf + fpre + str(t) + "_resp_growth_hydrolysis_rates.npy")
         for i in range(len(respindx)):
             sumratecorner = (ratesarray[i,yin,xleft] + ratesarray[i,yout,xleft] + ratesarray[i,yin,xright] + ratesarray[i,yout,xright])*vedge**2
             sumratebound = (sum(ratesarray[i,yin,xleft+1:xright]) + sum(ratesarray[i,yout,xleft+1:xright]) + sum(ratesarray[i,yin+1:yout,xleft]) + sum(ratesarray[i,yin+1:yout,xright]))*vedge*velem
             sumrateelem = sum(ratesarray[i,yin+1:yout, xleft+1:xright])*velem**2
-            meanrate = sum(sumratecorner+sumratebound+sumrateelem)/domainvol
-            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], meanrate])
+            volmeanrate = sum(sumratecorner+sumratebound+sumrateelem)/domainvol
+            meanrate = np.mean(ratesarray[i,:,:])
+            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], volmeanrate, meanrate])
 
-df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Meanrate'])
+df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Volumetric_Meanrate', 'Arithmetic_Meanrate'])
 
 df.to_csv(r"Z:\Saturated_flow\diffusion_transient\Mean_rate_ss.csv", sep = '\t')

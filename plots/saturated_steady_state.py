@@ -2528,7 +2528,7 @@ def scatter_chem_regime (data, Xvariable, Xlabel, Yvariable, Ylabel, scaling):
     elif scaling == "True":
         plt.xscale("log")
         plt.yscale("log")
-        plt.axhline(10, linestyle = '--', color = 'gray')
+#        plt.axhline(10, linestyle = '--', color = 'gray')
         plt.axhline(100, linestyle = '--', color = 'gray')
     plt.ylabel (Ylabel)
     plt.xlabel (Xlabel)

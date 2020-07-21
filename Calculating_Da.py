@@ -6,15 +6,12 @@ Created on Wed Jul  8 13:24:47 2020
 """
 import pandas as pd
 import data_reader.data_processing as proc
-import numpy as np
-import data_reader.reader as rdr
 
 # Saturated flow regime
-Regimes = ["Slow", "Equal", "Fast"]
+Regimes = ["Slow", "Medium", "Fast"]
 fpre = "NS-A"
 fsuf = r"/"
 gw = 1
-filename = "ratesAtFinish.dat"
 
 scdict = proc.masterscenarios() #master dictionary of all spatially heterogeneous scenarios that were run
 ratenames = proc.masterrates("saturated")
@@ -49,63 +46,18 @@ for Reg in Regimes:
     for c, r, in zip(gvarnames, gratenames):
         ratesubset.loc[(ratesubset.Regime == Reg) & (ratesubset.Rate_type == r), 'Chem'] = c
 
-comb = pd.merge(chemsubset, ratesubset[["Regime", "Trial", "Rate_type", "Meanrate", "Chem"]], on = ["Regime", "Trial", "Chem"])
+comb = pd.merge(chemsubset, ratesubset[["Regime", "Trial", "Rate_type", "Volumetric_Meanrate", "Arithmetic_Meanrate","Chem"]], on = ["Regime", "Trial", "Chem"])
 
-comb['Da'] = comb['Meanrate']/comb['Breakthroughtime']
+comb['V_Da'] = comb['Breakthroughtime']*comb['Volumetric_Meanrate']
+comb['A_Da'] = comb['Breakthroughtime']*comb['Arithmetic_Meanrate']
 
-#row = []
-#for c, r, in zip(gvarnames, gratenames)):
-#    chemrow = chemsubset.loc[(chemsubset.Regime == Reg) & (chemsubset.Trial == t) & (chemsubset.Chem == bioname)]
-#    traveltime = biorow.Breakthroughtime.iloc[0]
-#    da = traveltime*meanrate
-#    dabio = traveltime*meanrate/meanbiomass
-#    ka = traveltime*meanrate
-#    kabio = traveltime*meanrate/meanbiomass
-#    row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], meanrate, bioname, meanbiomass, meanrate/meanbiomass, da, ka, dabio, kabio, c])
-#
-#row = []
-#for Reg in Regimes:
-#    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
-#    if Reg == "Equal":
-#        Reg = "Medium"
-#    for t in Trial:
-#        print(t)
-#        filepath = directory + fpre + str(t) + fsuf + filename
-#        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
-#        df = np.load(directory + fpre + t + fsuf + fpre + t + "_df.npy")
-#        for bioindx, bioname, i,c in zip(microvars, microbes, range(len(respindx)), gvarnames):
-#            biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bioname)]
-#            ratesdf = rdr.Converttoarray_1581(M, "rates")
-#            meanbiomass = np.mean(df[bioindx, - 1, :, :])
-#            traveltime = biorow.Breakthroughtime.iloc[0]
-#            da = traveltime*meanrate
-#            dabio = traveltime*meanrate/meanbiomass
-#            ka = traveltime*meanrate
-#            kabio = traveltime*meanrate/meanbiomass
-#            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], meanrate, bioname, meanbiomass, meanrate/meanbiomass, da, ka, dabio, kabio, c])
+comb.to_csv(r"Z:\Saturated_flow\diffusion_transient\Da_mean_ss.csv", sep = '\t')
 
-#row = []
-#for Reg in Regimes:
-#    directory = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
-#    if Reg == "Equal":
-#        Reg = "Medium"
-#    for t in Trial:
-#        print(t)
-#        filepath = directory + fpre + str(t) + fsuf + filename
-#        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
-#        df = np.load(directory + fpre + t + fsuf + fpre + t + "_df.npy")
-#        for bioindx, bioname, i,c in zip(microvars, microbes, range(len(respindx)), gvarnames):
-##            biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bioname)]
-#            meanrate = np.mean(M[:, i])
-#            meanbiomass = np.mean(df[bioindx, - 1, :, :])
-#            traveltime = biorow.Breakthroughtime.iloc[0]
-#            da = traveltime*meanrate
-#            dabio = traveltime*meanrate/meanbiomass
-#            ka = traveltime*meanrate
-#            kabio = traveltime*meanrate/meanbiomass
-#            row.append([Reg, t, scdict[t]['Het'], scdict[t]['Anis'], gratenames[i], meanrate, bioname, meanbiomass, meanrate/meanbiomass, da, ka, dabio, kabio, c])
-
-#df = pd.DataFrame.from_records(row, columns = ['Regime', 'Trial', 'Variance', 'Anisotropy', 'Rate_type', 'Meanrate', 'Microbe', 'Meanbiomassconc', 'Rateperbio', 'Da', 'Ka', 'Dabio', 'Kabio', 'Chem'])
-
-
-#df.to_csv(r"Z:\Saturated_flow\diffusion_transient\Da_mean_ss.csv", sep = '\t')
+#Potential further data transformations not implemented right now: #No need to implement this i think so commenting it out
+#for Reg in list(comb.Regime.unique()):
+#    for c in list(comb.Chem.unique()):
+#        baseVDa = comb[(comb.Regime == Reg) & (comb.Trial == 'H') & (comb.Chem == c)].V_Da.iloc[0]
+#        comb.loc[(comb.Regime == Reg) & (comb.Chem == c), 'impactVDa'] = comb[(comb.Regime == Reg) & (comb.Chem == c)].V_Da/baseVDa
+#        baseADa = comb[(comb.Regime == Reg) & (comb.Trial == 'H') & (comb.Chem == c)].A_Da.iloc[0]
+#        comb.loc[(comb.Regime == Reg) & (comb.Chem == c), 'impactADa'] = comb[(comb.Regime == Reg) & (comb.Chem == c)].A_Da/baseADa
+#        print(comb.shape)
