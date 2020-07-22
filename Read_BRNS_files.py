@@ -35,9 +35,9 @@ gratenames = ["Immobile aerobic respiration", "Immobile ammonium respiration", "
 respindx = list(ratenames.index(i)+1 for i in rates)
 ratefiles = list("xrate"+str(i) for i in respindx)
 
-fileindex = [1, 2, 3, 9, 10, 12, 13]
-Pelist = [2, 11, 22, 2, 11, 45, 450]
-restime = [1316, 132, 13, 1.3, 6.6, 13.2, 26.3, 263]
+fileindex = [1, 2, 3, 9, 10, 12, 13, 15, 16, 17, 19, 20, 21]
+Pelist = [2, 11, 22, 2, 11, 45, 450, 2, 22, 45, 11, 22, 45]
+restime = [1316, 132, 13, 1.3, 6.6, 26, 263, 26, 263, 526, 7368, 144474, 28947]
 row = []
 #Path to file
 
@@ -45,7 +45,7 @@ for f,t, p in zip(fileindex,restime, Pelist):
     path_concdata = "X:\Pap1_discussion\BRNS_PeDa_"+ str(f) + "\conc.dat"
     concdata = np.loadtxt(path_concdata, skiprows = 1)
     np.shape(concdata)
-    delta = (concdata[-1,1:])/concdata[0,1:]
+    delta = (concdata[0,1:] - concdata[-1,1:])/concdata[0,1:]
     for c, gvar, rfile, r, rvar in zip(gvarindex, gvarnames, ratefiles, rates, gratenames):
         concdata = np.loadtxt(path_concdata, skiprows = 1)    
         path_ratedata = "X:\Pap1_discussion\BRNS_PeDa_" + str(f) +  r"/" + rfile + ".dat"
@@ -59,3 +59,31 @@ for f,t, p in zip(fileindex,restime, Pelist):
         row.append([f, t, gvar, delta[c-1], rvar, V_Da, p])
 
 df = pd.DataFrame.from_records(row, columns = ["Scenario", "Residence_time", "Chem", "reldelmassflux", "Rate_type", "Da", "Pe"])
+
+subset = df.sort_values(by=['Pe','Da'])
+
+import matplotlib.pyplot as plt
+marklist = ['o', '^', 's', 'd']
+subset = subset[subset['Pe']<100]
+plt.figure()
+for p in subset['Pe'].unique().tolist():
+    data = subset[subset['Pe']==p]
+    plt.scatter(data['Da'], data['reldelmassflux'], marker = marklist[subset['Pe'].unique().tolist().index(p)], alpha = 0.5, label = p)
+plt.xscale('log')
+plt.xlim(left = 0.00001)
+plt.xlabel ("Dammkohler number")
+plt.ylabel ("Normalized removal")
+plt.legend(title = "Pe")
+plt.savefig("Z:\Saturated_flow\diffusion_transient\PE_Da_Removal.png", dpi = 300, pad_inches = 0.1)
+
+plt.figure()
+for f in fileindex[:3]:
+    subset2 = subset[subset['Scenario']==f]
+    for p in subset2['Pe'].unique().tolist():
+        data = subset2[(subset2['Pe']==p) ]
+        plt.scatter(data['Da'], data['reldelmassflux'], marker = marklist[subset['Pe'].unique().tolist().index(p)], alpha = 0.5, label = p)
+plt.xscale('log')
+plt.xlim(left = 0.00001)
+plt.xlabel ("Dammkohler number")
+plt.ylabel ("Normalized removal")
+plt.legend(title = "Pe")

@@ -44,17 +44,25 @@ plt.legend(fontsize = 12)
 
 #Show variation of Da with spatial heterogeneity
 
-sssp.scatter_chem_regime (finaldata, "fraction", "Spatial heterogeneity", "V_Da", "Da", "Logy")
+sssp.scatter_chem_regime (comb, "fraction", "Spatial heterogeneity", "impactVDa", "Impact on Da", "None")
 plt.ylim(bottom = 0.01)
 plt.title("Da# with spatial heterogeneity")
 
-sssp.scatter_chem_regime (finaldata, "fraction", "Spatial heterogeneity", "del2massflux", "Impact on O, N removal", "None")
+sssp.scatter_chem_regime (comb, "fraction", "Spatial heterogeneity", "del2massflux", "Impact on O, N removal", "None")
 plt.xlim(left = 0.01)
 plt.title("Impact on chemical removal (normalized by that in base case) with spatial heterogeneity")
 
 sssp.scatter_chem_regime (finaldata, "PeDa", "PeDa", "%del2massflux", "Impact on O, N removal", "True")
 plt.xlim(left = 0.001)
 plt.title("Impact on chemical removal (normalized by that in base case) with Da")
+
+sssp.scatter_chem_regime (comb, "impactVDa", "Impact on Da", "del2massflux", "Impact on O, N removal", "None")
+plt.xlim(left = 0.01)
+plt.title("Impact on chemical removal (normalized by that in base case) with spatial heterogeneity")
+
+sssp.scatter_chem_regime (comb, "V_Da", "Da", "del2massflux", "Impact on O, N removal", "Logx")
+plt.xlim(left = 0.01)
+plt.title("Impact on chemical removal (normalized by that in base case) with spatial heterogeneity")
 
 #Generic plots without distinguishing between chemicals and flow regimes
 gp.scatter(finaldata, "fraction", "Spatial heterogeneity", "del2massflux", "Impact on O, N removal", "None")

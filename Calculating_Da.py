@@ -54,10 +54,8 @@ comb['A_Da'] = comb['Breakthroughtime']*comb['Arithmetic_Meanrate']
 comb.to_csv(r"Z:\Saturated_flow\diffusion_transient\Da_mean_ss.csv", sep = '\t')
 
 #Potential further data transformations not implemented right now: #No need to implement this i think so commenting it out
-#for Reg in list(comb.Regime.unique()):
-#    for c in list(comb.Chem.unique()):
-#        baseVDa = comb[(comb.Regime == Reg) & (comb.Trial == 'H') & (comb.Chem == c)].V_Da.iloc[0]
-#        comb.loc[(comb.Regime == Reg) & (comb.Chem == c), 'impactVDa'] = comb[(comb.Regime == Reg) & (comb.Chem == c)].V_Da/baseVDa
-#        baseADa = comb[(comb.Regime == Reg) & (comb.Trial == 'H') & (comb.Chem == c)].A_Da.iloc[0]
-#        comb.loc[(comb.Regime == Reg) & (comb.Chem == c), 'impactADa'] = comb[(comb.Regime == Reg) & (comb.Chem == c)].A_Da/baseADa
-#        print(comb.shape)
+for Reg in list(comb.Regime.unique()):
+    for c in list(comb.Chem.unique()):
+        baseVDa = comb[(comb.Regime == Reg) & (comb.Trial == 'H') & (comb.Chem == c)].V_Da.iloc[0]
+        comb.loc[(comb.Regime == Reg) & (comb.Chem == c), 'impactVDa'] = comb[(comb.Regime == Reg) & (comb.Chem == c)].V_Da/baseVDa
+        print(comb.shape)
