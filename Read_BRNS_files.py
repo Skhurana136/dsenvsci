@@ -8,6 +8,16 @@ import numpy as np
 import pandas as pd
 import data_reader.data_processing as proc
 
+#Required functions:
+def calcvolmeanrate (ratedata, domain):
+    firstnode = ratedata.iloc[-100]
+    lastnode = ratedata.iloc[-1]        
+    sidelength = domain.iloc[-1] - domain.iloc[-2]
+    domainvol = domain.iloc[-1] - domain.iloc[-100]
+    volmeanrate = ((firstnode + lastnode)*sidelength/2 + sum(ratedata.iloc[-101:-1])*sidelength)/domainvol
+    
+    return volmeanrate
+
 #variables of interest:
 
 chemdict = proc.masterdissolvedspecies() #master dictionary of dissolved species
@@ -26,14 +36,12 @@ gvarnames = ["DO", "Ammonium", "Nitrate"]
 indices = list(Chemnames.index(i) for i in gvarnames)
 gvarindex = list(chemindx[i] for i in indices)
 
-rates = [
-    "Fixedaeroresp",
-    "Fixedammresp",
-    "Fixednitraresp"
-    ]
-gratenames = ["Immobile aerobic respiration", "Immobile ammonium respiration", "Immobile nitrate respiration"]
-respindx = list(ratenames.index(i)+1 for i in rates)
-ratefiles = list("xrate"+str(i) for i in respindx)
+gratenames = ["Aerobic respiration", "Ammonium respiration", "Nitrate respiration"]
+respindx = range(66)[1:]
+
+#list(ratenames.index(i) for i in rates)
+#ratefiles = = list("xrate" + str(i) for i in respindx)
+#r1 = np.loadtxt()
 
 scdict = {
         1: {'Pe': 2, 'time': 1316},
@@ -62,57 +70,50 @@ scdict = {
         29: {'Pe': 22, 'time': 132},
         }
 
-scdict = {
-        1: {'Pe': 2, 'time': 1316},
-        2: {'Pe': 12, 'time': 132},
-        3: {'Pe': 22, 'time': 13},
-        4: {'Pe': 47, 'time': 13},
-        5: {'Pe': 32, 'time': 132},
-        7: {'Pe': 4, 'time': 132},
-        8: {'Pe': 10, 'time': 13},
-        9: {'Pe': 2, 'time': 1.3},
-        10: {'Pe': 11, 'time': 6.6},
-        12: {'Pe': 50, 'time': 26.3},
-        13: {'Pe': 450, 'time': 263},
-        15: {'Pe': 2, 'time': 26},
-        16: {'Pe': 22, 'time': 263},
-        17: {'Pe': 50, 'time': 526},
-        19: {'Pe': 11, 'time': 7368},
-        20: {'Pe': 22, 'time': 14474},
-        22: {'Pe': 3, 'time': 13},
-        23: {'Pe': 11, 'time': 1316},
-        24: {'Pe': 22, 'time': 1316},
-        25: {'Pe': 46, 'time': 1316},
-        }
-
 fileindex = list(t for t,values in scdict.items())
 restime = list(values['time'] for t,values in scdict.items())
 Pelist = list(values['Pe'] for t,values in scdict.items())
 
 row = []
-#Path to file
-
 for f,t, p in zip(fileindex, restime, Pelist):
     path_concdata = "X:\Pap1_discussion\BRNS_PeDa_"+ str(f) + "\conc.dat"
     concdata = np.loadtxt(path_concdata, skiprows = 1)
     np.shape(concdata)
-    delta = (concdata[0,1:] - concdata[-1,1:])/concdata[0,1:]
-    for c, gvar, rfile, r, rvar in zip(gvarindex, gvarnames, ratefiles, rates, gratenames):
-        concdata = np.loadtxt(path_concdata, skiprows = 1)    
-        path_ratedata = "X:\Pap1_discussion\BRNS_PeDa_" + str(f) +  r"/" + rfile + ".dat"
-        ratedata = np.loadtxt(path_ratedata)
-        firstnode = ratedata[-100,0]
-        lastnode = ratedata[-1,0]
-        sidelength = ratedata[-1,1] - ratedata[-2,1]
-        domainvol = ratedata[-1,1] - ratedata[-100,1]
-        volmeanrate = ((firstnode + lastnode)*sidelength/2 + sum(ratedata[-101:-1,0])*sidelength)/domainvol
-        V_Da = t*volmeanrate
-        row.append([f, t, gvar, delta[c-1], rvar,  volmeanrate, V_Da, p])
-
-df = pd.DataFrame.from_records(row, columns = ["Scenario", "Residence_time", "Chem", "reldelmassflux", "Rate_type", "Volumetric_MeanRate", "Da", "Pe"])
+    delta = (concdata[0,1:] - concdata[-1,1:])
+    reldelta = (concdata[0,1:] - concdata[-1,1:])/concdata[0,1:]
+    ratedata = []
+    for i in respindx:
+        data = np.loadtxt("X:/Pap1_discussion/BRNS_PeDa_" + str(f) + "/" + "xrate" + str(i) + ".dat")
+        ratedata.append(data[:,0])
+    ratedf = pd.DataFrame.from_records(ratedata).T
+    ratedf["X"] = data[:,1]
+    np.shape(ratedf)
+    r1 = calcvolmeanrate(ratedf[0], ratedf["X"])
+    r2 = calcvolmeanrate(ratedf[1], ratedf["X"])
+    r3 = calcvolmeanrate(ratedf[2], ratedf["X"])
+    r4 = calcvolmeanrate(ratedf[3], ratedf["X"])
+    r17 = calcvolmeanrate(ratedf[16], ratedf["X"])
+    r18 = calcvolmeanrate(ratedf[17], ratedf["X"])
+    r19 = calcvolmeanrate(ratedf[18], ratedf["X"])
+    r20 = calcvolmeanrate(ratedf[19], ratedf["X"])
+    r35 = calcvolmeanrate(ratedf[34], ratedf["X"])
+    r36 = calcvolmeanrate(ratedf[35], ratedf["X"])
+    r49 = calcvolmeanrate(ratedf[48], ratedf["X"])
+    r50 = calcvolmeanrate(ratedf[49], ratedf["X"])
+    r51 = calcvolmeanrate(ratedf[50], ratedf["X"])
+    r52 = calcvolmeanrate(ratedf[51], ratedf["X"])
+    r65 = calcvolmeanrate(ratedf[64], ratedf["X"])
+    meanrates= [-1*(r1 + r2) - 1*(r49 + r50), 0.1*r65 - 0.1*(r3 + r4 + r19 + r20 + r35 + r36 + r51 + r52) - 0.5*(r49 + r50), -0.8*(r17 + r18)]
+    meanrateswocoef= [-(r1 + r2) - (r49 + r50), r65 - (r3 + r4 + r19 + r20 + r35 + r36 + r51 + r52) - (r49 + r50), -(r17 + r18)]
+    v_da = [abs(t*m) for m in meanrates]
+    v_dawocoef = [abs(t*m) for m in meanrateswocoef]
+    for c, gvar, rvar in zip(gvarindex, gvarnames, gratenames):
+        mfrate = delta[c-1]/(0.2*t) #From Meile and Jung, 2010
+        row.append([f, t, gvar, delta[c-1], reldelta[c-1], rvar,  abs(meanrates[gvarnames.index(gvar)]), v_da[gvarnames.index(gvar)], abs(meanrateswocoef[gvarnames.index(gvar)]), v_dawocoef[gvarnames.index(gvar)], mfrate, p])
+    
+df = pd.DataFrame.from_records(row, columns = ["Scenario", "Residence_time", "Chem", "delmassflux", "reldelmassflux", "Rate_type", "Volumetric_MeanRate", "Da", "WOCF_VMR", "WOCF_Da", "Massflux_MeanRate","Pe"])
 
 df.to_csv("X:\Pap1_discussion\PE_Da_chem_summary.csv", sep = '\t')
-subset = df.sort_values(by=['Pe','Da'])
 
 import matplotlib.pyplot as plt
 marklist = ['o', '^', 's']
@@ -128,13 +129,26 @@ amm = mlines.Line2D([], [], Linestyle = 'None', marker = '^', alpha = 0.5, label
 nitra = mlines.Line2D([], [], Linestyle = 'None', marker = 's', alpha = 0.5, label="Nitrate")
 patchlist = [red_patch, green_patch, blue_patch, orange_patch, do, amm, nitra]
 
-subset = pd.read_csv("X:\Pap1_discussion\PE_Da_chem_summary.csv", sep = '\t')
-subset["%reldelmassflux"] = subset["reldelmassflux"]*100
-subset = subset[subset['Pe']<100]
-subset = subset[subset['Da']<300]
+alldata = pd.read_csv("X:\Pap1_discussion\PE_Da_chem_summary.csv", sep = '\t')
+alldata["%reldelmassflux"] = alldata["reldelmassflux"]*100
+subset = alldata[alldata['Scenario'].isin([1,2,3,4,5,7,8,22,23,24,25, 26, 27, 28, 29])]
+subset = alldata[alldata['Scenario'].isin([1,2,3])]
 
-subset = subset[subset['Scenario'].isin([1,2,3,4,5,7,8,22,23,24,25, 26, 27, 28, 29])]
-subset = subset[subset['Scenario'].isin([1,2,3])]
+plt.figure()
+for c in ["Ammonium", "DO", "Nitrate"]:
+    for p in [2,11,22, 50]:
+        data = subset[(subset['Pe']==p) & (subset['Chem']==c)]
+        plt.scatter(abs(data['Da']*data['Pe']), abs(data['Massflux_MeanRate']/data['Volumetric_MeanRate']), color = colorlist[[2,11,22,50].index(p)], marker = marklist[["Ammonium", "DO", "Nitrate"].index(c)], alpha = 0.5, label = data["Scenario"])
+plt.xscale('log')
+plt.yscale('log')
+#plt.xlim ([0.0001, 10000])
+#plt.ylim ([0.0001, 10000])
+plt.xlabel ("Da/Pe")
+plt.ylabel ("Concentration derived rate/Volumetric mean rate")
+plt.legend(title = "Chem")
+plt.legend(handles = patchlist, bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left',
+           ncol=len(patchlist), mode="expand", borderaxespad=0., title = "Pe and Chem")
+plt.savefig("Z:\Saturated_flow\diffusion_transient\Rates_DaPe_ratio.png", dpi = 300, pad_inches = 0.1)
 
 plt.figure()
 for c in ["Ammonium", "DO", "Nitrate"]:

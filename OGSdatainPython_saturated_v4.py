@@ -200,6 +200,64 @@ for j in Trial:
         )
 csvfile.close()
 
+#Average concentration at inlet and outlet
+row = []
+for Reg in ["Slow", "Equal", "Fast"]:
+    d = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+    for j in Trial:
+        df, massendtime, masstime, conctime, Velocity, head = sta.calcconcmasstime(
+            j,
+            scdict[j]['Het'],
+            scdict[j]['Anis'],
+            gw,
+            d,
+            fpre,
+            fsuf,
+            yin,
+            yout,
+            xleft,
+            xright,
+            vars,
+            gvarnames,
+        )
+        print (np.shape(conctime))
+        if Reg == "Equal":
+            Reg = "Medium"
+        for c in ["DO", "Ammonium", "Nitrate"]:
+            row.append([Reg, j, scdict[j]['Het'], scdict[j]['Anis'], c, conctime[-1,0,gvarnames.index(c)],conctime[-1,-1,gvarnames.index(c)]])
+
+avgconc = pd.DataFrame.from_records(row, columns = ["Regime", "Trial", "Variance", "Anisotropy", "Chem", "Inlet_conc", "Outlet_conc"])
+avgconc.to_csv("Z:/Saturated_flow/diffusion_transient/avgconc.csv", sep = "\t")
+
+row = []
+for Reg in ["Slow", "Equal", "Fast"]:
+    d = r"Z:/Saturated_flow/diffusion_transient/" + Reg + "AR_0/"
+    for j in Trial:
+        df, massendtime, masstime, conctime, Velocity, head = sta.calcconcmasstime(
+            j,
+            scdict[j]['Het'],
+            scdict[j]['Anis'],
+            gw,
+            d,
+            fpre,
+            fsuf,
+            yin,
+            yout,
+            xleft,
+            xright,
+            vars,
+            gvarnames,
+        )
+        fluxin = ((df[2,-1,0,xleft] + df[2,-1,0,xright])*0.05 + sum(df[2,-1,0,xleft+1:xright])*0.1)*0.2
+        fluxout = ((df[2,-1,-1,xleft] + df[2,-1,-1,xright])*0.05 + sum(df[2,-1,-1,xleft+1:xright])*0.1)*0.2
+        if Reg == "Equal":
+            Reg = "Medium"
+        for c in ["DO", "Ammonium", "Nitrate"]:
+            row.append([Reg, j, scdict[j]['Het'], scdict[j]['Anis'], fluxin, fluxout, c, conctime[-1,0,gvarnames.index(c)],conctime[-1,-1,gvarnames.index(c)]])
+
+avgconc = pd.DataFrame.from_records(row, columns = ["Regime", "Trial", "Variance", "Anisotropy", "influx", "outflux", "Chem", "Inlet_conc", "Outlet_conc"])
+avgconc.to_csv("Z:/Saturated_flow/diffusion_transient/avgconc.csv", sep = "\t")
+
 # Mass balance
 yin = 0
 yout = 50
@@ -709,11 +767,11 @@ dfall2 = pd.merge(
 ).rename(columns={"Time": "Breakthroughtime"})
 dfall2["%del4massflux"] = dfall2["del4massflux"] * 100
 dfall2.to_csv(
-    "Z:/Saturated_flow/diffusion_transient/massflux_withbreakthrough_forMartin_v4_complete.csv",
+    "Z:/Saturated_flow/diffusion_transient/massflux_withbreakthrough_forMartin_v5_complete.csv",
     sep="\t",
 )
 
-filename = "Z:/Saturated_flow/diffusion_transient/massflux_withbreakthrough_forMartin_v4_complete.csv"
+filename = "Z:/Saturated_flow/diffusion_transient/massflux_withbreakthrough_forMartin_v5_complete.csv"
 dfall2 = pd.read_csv(filename, delimiter="\t")
 dummy = sssp.norm_mf(dfall2, gvarnames)
 dummy.savefig(
@@ -750,7 +808,7 @@ dfall2biomass = pd.merge(
 ).rename(columns={"Time": "Breakthroughtime"})
 dfall2biomass["%del2biomass"] = dfall2biomass["del2biomass"] * 100
 dfall2biomass.to_csv(
-    "Z:/Saturated_flow/diffusion_transient/biomass_withbreakthrough_forMartin_v4_complete.csv",
+    "Z:/Saturated_flow/diffusion_transient/biomass_withbreakthrough_forMartin_v5_complete.csv",
     sep="\t",
 )
 

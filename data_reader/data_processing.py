@@ -150,9 +150,6 @@ def masterscenarios():
 def masterrates(scenariotype):
     #master list of rates captured in the reaction network with an additional rate for DO diffusion in unsaturated flow regimes
     masterrates = [
-    "x_m",
-    "Y",
-    "Z",
     "Fixedaeroresp",
     "Mobaeroresp",
     "Fixedaerogwth",
@@ -218,6 +215,7 @@ def masterrates(scenariotype):
     "Mortinfixedamm",
     "Mortinmobamm",
     "Hydrolysis",
+    "AutotrophicPOMgen"
     ]
     
     if (scenariotype == "unsaturated"):

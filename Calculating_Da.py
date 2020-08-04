@@ -31,27 +31,39 @@ gvarnames = ["DO", "Ammonium", "Nitrate"]
 chemsubset = chemdata[chemdata['Chem'].isin (gvarnames)]
 chemsubset.shape
 
-rate_path_data = r"Z:\Saturated_flow\diffusion_transient\Mean_rate_ss.csv"
+rate_path_data = r"Z:\Saturated_flow\diffusion_transient\Complex_Mean_rate_ss.csv"
 ratedata = pd.read_csv(rate_path_data, sep = '\t')
 ratedata.columns
 ratedata.Rate_type.unique()
-gratenames = ['Immobile aerobic respiration',
-       'Immobile nitrate respiration',
-       'Immobile ammonium respration', 
-       ]
+gratenames = ["DO removal", "Ammonium removal", "Nitrate removal"]
 
 ratesubset = ratedata[ratedata['Rate_type'].isin (gratenames)]
+velocity = [0.00038, 0.0038, 0.038]
 
-for Reg in Regimes:
-    for c, r, in zip(gvarnames, gratenames):
-        ratesubset.loc[(ratesubset.Regime == Reg) & (ratesubset.Rate_type == r), 'Chem'] = c
+for vel, Reg in zip(velocity,Regimes):
+        ratesubset.loc[(ratesubset.Regime == Reg), 'Velocity'] = vel
 
-comb = pd.merge(chemsubset, ratesubset[["Regime", "Trial", "Rate_type", "Volumetric_Meanrate", "Arithmetic_Meanrate","Chem"]], on = ["Regime", "Trial", "Chem"])
+comb = pd.merge(chemsubset, ratesubset[["Regime", "Trial", "Rate_type", "Volumetric_Meanrate", "Arithmetic_Meanrate","Chem", "Velocity"]], on = ["Regime", "Trial", "Chem"])
 
 comb['V_Da'] = comb['Breakthroughtime']*comb['Volumetric_Meanrate']
 comb['A_Da'] = comb['Breakthroughtime']*comb['Arithmetic_Meanrate']
 
-comb.to_csv(r"Z:\Saturated_flow\diffusion_transient\Da_mean_ss.csv", sep = '\t')
+avgconcdata = pd.read_csv("Z:/Saturated_flow/diffusion_transient/avgconc.csv", sep = ',')
+avgconcdata['Conc_Rate'] = -1*avgconcdata['influx']*(avgconcdata['Inlet_conc'] - avgconcdata['Outlet_conc'])/(0.3*0.5*0.2)
+
+comb = pd.merge(comb, avgconcdata[["Regime", "Trial", "Chem", "Inlet_conc", "Outlet_conc", "Conc_Rate"]], on = ["Regime", "Trial", "Chem"])
+comb['Massflux_MeanRate'] = comb['delmassflux']/(0.3*0.5*0.2)
+comb['MF_Da'] = comb['delmassflux']/(comb['Velocity']*0.3)
+comb['Conc_Da'] = comb['Conc_Rate']*comb['Breakthroughtime']
+
+comb['MF/V_Da'] = comb['MF_Da']/comb['V_Da']
+comb['A/V_Da'] = comb['A_Da']/comb['V_Da']
+comb['MF/V_R'] = comb['Massflux_MeanRate']/comb['Volumetric_Meanrate']
+comb['A/V_R'] = comb['Arithmetic_Meanrate']/comb['Volumetric_Meanrate']
+comb['C/V_Da'] = comb['Conc_Da']/comb['V_Da']
+comb['C/V_R'] = comb['Conc_Rate']/comb['Volumetric_Meanrate']
+
+comb.to_csv(r"Z:\Saturated_flow\diffusion_transient\Complex_Da_mean_ss.csv", sep = '\t')
 
 #Potential further data transformations not implemented right now: #No need to implement this i think so commenting it out
 for Reg in list(comb.Regime.unique()):

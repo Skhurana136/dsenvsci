@@ -4,7 +4,7 @@ Created on Wed Aug  7 18:05:45 2019
 
 @author: khurana
 """
-
+##Don't use this. Use read_rate_data.py
 import pandas as pd
 import data_reader.data_processing as proc
 
@@ -216,7 +216,9 @@ AFbiomassgvarnames = [
     "Active fixed Ammonia oxidizers",
     "Active fixed Nitrate reducers",
 ]
+
 # Calculate bulk Damkohler numbers in the domain
+respindx = np.array(range(66)[1:])
 
 biomass_path_data = r"Y:\Home\khurana\4. Publications\Restructuring\Paper1\Figurecodes\biomass_withbreakthrough_forMartin_v4_complete.csv"
 biomass = pd.read_csv(biomass_path_data, sep = '\t')
@@ -235,7 +237,7 @@ for Reg in Regimes:
     for t in Trial:
         print(t)
         filepath = directory + fpre + str(t) + fsuf + filename
-        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=16 + respindx)
+        M = np.loadtxt(filepath, dtype=float, delimiter=" ", usecols=18 + respindx)
         df = np.load(directory + fpre + t + fsuf + fpre + t + "_df.npy")
         for bioindx, bioname, i,c in zip(AFbiomassvars, microbes, range(len(respindx)), gvarnames):
             biorow = biomass.loc[(biomass.Regime == Reg) & (biomass.Trial == t) & (biomass.Chem == bioname)]
