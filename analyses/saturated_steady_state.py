@@ -7,7 +7,196 @@ Created on Fri Apr 10 16:55:52 2020
 import numpy as np
 from analyses.saturated_transient import calcconcmasstime
 
+def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
+    import data_reader.data_processing as proc
+    reactivespecies = proc.masterdissolvedspecies(flowregime)
+    microbialspecies = proc.mastermicrobialspecies(flowregime)
+    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
+    species = {**reactivespecies, **microbialspecies}
 
+    vedge = 0.005
+    velem = 0.01
+    por = 0.2
+    
+    massfluxin = np.zeros([len(gvarnames)])
+    massfluxout = np.zeros([len(gvarnames)])
+    df = numpyarray
+    veliredg = df[2, -1, yin, xright]
+    veliledg = df[2, -1, yin, xleft]
+    veloredg = df[2, -1, yout, xright]
+    veloledg = df[2, -1, yout, xleft]
+    veloelem = df[2, -1, yout, xleft + 1 : xright]
+    velielem = df[2, -1, yin, xleft + 1 : xright]
+#    velelem = df[2, -1, yin + 1 : yout, xleft + 1 : xright]
+#    vellelem = df[2, -1, yin + 1 : yout, xleft]
+#    velrelem = df[2, -1, yin + 1 : yout, xright]
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    elif flowregime == "Unsaturated":
+        satiredg = df[4, -1, yin, xright]
+        satiledg = df[4, -1, yin, xleft]
+        satoredg = df[4, -1, yout, xright]
+        satoledg = df[4, -1, yout, xleft]
+        satoelem = df[4, -1, yout, xleft + 1 : xright]
+        satielem = df[4, -1, yin, xleft + 1 : xright]
+#        satlelem = df[4, 1:, yin + 1 : yout, xleft]
+#        satrelem = df[4, 1:, yin + 1 : yout, xright]
+#        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+    for i in gvarnames:
+        idx = gvarnames.index(i)
+        if i == "Nitrogen":
+            Nspecies = mobilespecies + ["Particulate organic matter"]
+            ninlet = 0
+            noutlet = 0
+            for n in Nspecies:
+                 ninlet = (
+                    ninlet
+                    + (
+                        df[species[n]['TecIndex'], -1, yin, xleft] * satiledg * veliledg * vedge
+                        + df[species[n]['TecIndex'], -1, yin, xright] * satiredg * veliredg * vedge
+                        + sum(
+                            df[species[n]['TecIndex'], -1, yin, xleft + 1 : xright]
+                            * satielem
+                            * velielem
+                            * velem
+                        )
+                    )
+                    / por
+                    )
+                 noutlet = (
+                    noutlet
+                    + (
+                        df[species[n]['TecIndex'], -1, yout, xleft] * satoledg * veloledg * vedge
+                        + df[species[n]['TecIndex'], -1, yout, xright] * satoredg * veloredg * vedge
+                        + sum(
+                            df[species[n]['TecIndex'], -1, yout, xleft + 1 : xright]
+                            * satoelem
+                            * veloelem
+                            * velem
+                        )
+                    )
+                    / por
+                )
+            sumin = 0
+            sumout = 0
+            for r in ["Ammonium", "Nitrate"]:                            
+                rin = (
+                        df[reactivespecies[r]['TecIndex'], -1, yin, xleft]*satiledg*veliledg*vedge
+                + df[reactivespecies[r]['TecIndex'], -1, yin, xright]*satiredg*veliredg*vedge
+                + np.sum(df[reactivespecies[r]['TecIndex'], -1, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1))/por
+                rout = (
+                        df[reactivespecies[r]['TecIndex'], -1, yout, xleft]*satoledg*veloledg*vedge
+                + df[reactivespecies[r]['TecIndex'], -1, yout, xright]*satoredg*veloredg*vedge
+                + np.sum(
+                        df[reactivespecies[r]['TecIndex'], -1, yout, xleft + 1 : xright]
+                        * satoelem
+                        * veloelem
+                        * velem,
+                        axis=-1,
+                        )
+                ) / por
+                sumin = sumin + rin
+                sumout = sumout + rout
+            massfluxin[idx] = ninlet/10 + sumin
+            massfluxout[idx] = noutlet/10 + sumout
+        elif i == "TOC":
+            cinlet = 0
+            coutlet = 0
+            for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+                cinlet = (
+                        cinlet
+                        + (
+                        df[species[c]['TecIndex'], -1, yin, xleft]
+                            * satiledg
+                            * veliledg
+                            * vedge
+                        
+                        + df[species[c]['TecIndex'], -1, yin, xright]
+                                * satiredg
+                                * veliredg
+                                * vedge
+                            
+                        + np.sum(
+                                    df[species[c]['TecIndex'], -1, yin, xleft + 1 : xright]
+                                    * satielem
+                                    * velielem
+                                    * velem,
+                                    axis=-1,
+                                )
+                            )/por
+                        )
+                    
+                coutlet = (
+                    coutlet
+                    + (df[species[c]['TecIndex'], -1, yout, xleft]
+                            * satoledg
+                            * veloledg
+                            * vedge
+                            
+                        + df[species[c]['TecIndex'], -1, yout, xright]
+                                * satoredg
+                                * veloredg
+                                * vedge
+                            
+                        + np.sum(
+                                    df[species[c]['TecIndex'], -1, yout, xleft + 1 : xright]
+                                    * satoelem
+                                    * veloelem
+                                    * velem,
+                                    axis=-1,
+                                )
+                            )/por
+                        )
+                        
+            massfluxin[idx] = cinlet
+            massfluxout[idx] = coutlet
+        else:
+            massfluxin[idx] = (
+                df[species[i]['TecIndex'], -1, yin, xleft]
+                        * satiledg
+                        * veliledg
+                        * vedge
+                   
+                +  df[species[i]['TecIndex'], -1, yin, xright]
+                        * satiredg
+                        * veliredg
+                        * vedge
+                   
+                + np.sum(
+                            df[species[i]['TecIndex'], -1, yin, xleft + 1 : xright]
+                            * satielem
+                            * velielem
+                            * velem,
+                            axis=-1,
+                        )
+                    ) / por
+            massfluxout[idx] = (                    df[species[i]['TecIndex'], -1, yout, xleft]
+                        * satoledg
+                        * veloledg
+                        * vedge
+                   
+                    + df[species[i]['TecIndex'], -1, yout, xright]
+                        * satoredg
+                        * veloredg
+                        * vedge
+                    + np.sum(                            df[species[i]['TecIndex'], -1, yout, xleft + 1 : xright]
+                            * satoelem
+                            * veloelem
+                            * velem,
+                                axis=-1,
+                        )
+                    ) / por
+    return massfluxin, massfluxout
+
+    
 def calcmassflux(
     Trial,
     Het,

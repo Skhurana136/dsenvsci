@@ -86,76 +86,41 @@ def readTecfile(filename):
             elif np.shape(M)[0] != dataPoints:
                 count = count + 1
                 continue
-        D[0:dataPoints, 0 : len(Headers), ii] = M[:, 0 : len(M[1]) - 1]
+        D[:, :, ii] = M[:, :-1]
     print("Total corrupted time steps: ", count)
     return dataPoints, numberOfTimeSteps, Headers, D
 
-# converting loaded data to multi-dimensional array (time stepsx51rowsx31columns)
-def Converttoarray_1581(D,datatype):
-    if (datatype == "tec"):
-        steps = np.shape(D)[2]
-        Headers = np.shape(D)[1]
-        size = np.shape(D)[0]
-        df2 = np.ndarray([Headers - 3, steps, 51, 31])
-        for i in range(Headers - 3):
-            counter = 0
-            for j in range(steps):
-                #           print (Headers[i+3])
-                while counter < (j + 1) * size:
-                    for k in range(51):
-                        for l in range(31):
-                            df2[i, j, k, l] = D[counter - (j) * size, i + 3, j]
-                            counter = counter + 1
-        df = np.ndarray([Headers - 3, steps, 51, 31])
-        for j in range(51):
-            df[:, :, 50 - j, :] = df2[:, :, j, :]
-    elif (datatype == "rates"):
-        Headers = np.shape(D)[1]
-        size = np.shape(D)[0]
-        df2 = np.ndarray([Headers, 51, 31])
-        for i in range(Headers):
-            counter = 0
-            while counter < size:
-                for k in range(51):
-                    for l in range(31):
-                        df2[i, k, l] = D[counter - size, i]
-                        counter = counter + 1
-        df = np.ndarray([Headers, 51, 31])
-        for j in range(51):
-            df[:, 50 - j, :] = df2[:, j, :]
-    return df
-
 # converting loaded data to multi-dimensional array (timestepsx101rowsx61columns)
-def Convertetoarray_6161(D, datatype):
+def Convertetoarray(D, datatype, vertnodes, horiznodes):
     if (datatype == "tec"):
         steps = np.shape(D)[2]
         Headers = np.shape(D)[1]
         size = np.shape(D)[0]
-        df2 = np.ndarray([Headers - 3, steps, 101, 61])
+        df2 = np.ndarray([Headers - 3, steps, vertnodes, horiznodes])
         for i in range(Headers - 3):
             counter = 0
             for j in range(steps):
                 #           print (Headers[i+3])
                 while counter < (j + 1) * size:
-                    for k in range(101):
-                        for l in range(61):
+                    for k in range(vertnodes):
+                        for l in range(horiznodes):
                             df2[i, j, k, l] = D[counter - (j) * size, i + 3, j]
                             counter = counter + 1
-        df = np.ndarray([Headers - 3, steps, 101, 61])
-        for j in range(101):
-            df[:, :, 100 - j, :] = df2[:, :, j, :]
+        df = np.ndarray([Headers - 3, steps, vertnodes, horiznodes])
+        for j in range(vertnodes):
+            df[:, :, vertnodes - 1 - j, :] = df2[:, :, j, :]
     elif (datatype == "rates"):
         Headers = np.shape(D)[1]
         size = np.shape(D)[0]
-        df2 = np.ndarray([Headers, 101, 61])
+        df2 = np.ndarray([Headers, vertnodes, horiznodes])
         for i in range(Headers):
             counter = 0
             while counter < size:
-                for k in range(101):
-                    for l in range(61):
+                for k in range(vertnodes):
+                    for l in range(horiznodes):
                         df2[i, k, l] = D[counter - size, i]
                         counter = counter + 1
-        df = np.ndarray([Headers, 101, 61])
-        for j in range(101):
-            df[:, 100 - j, :] = df2[:, j, :]        
+        df = np.ndarray([Headers, vertnodes, horiznodes])
+        for j in range(vertnodes):
+            df[:, vertnodes - 1 - j, :] = df2[:, j, :]        
     return df

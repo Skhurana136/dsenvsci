@@ -12,495 +12,183 @@ import pandas as pd
 from scipy import signal
 
 
-def calcmft_temp(
-    Tforfpre,
-    Trial,
-    vars,
-    gvarnames,
-    biomassvars,
-    biomassgvarnames,
-    d,
-    fpre,
-    fsuf,
-    Het,
-    Anis,
-    gw,
-):
-    yout = 50
-    yin = 0
-    xleft = 0
-    xright = 30
+#def calcmft_temp(Tforfpre, Trial, gvarnames, d, yin, yout, xleft, xright, fpre, fsuf, Het, Anis):
+def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):            
+    import data_reader.data_processing as proc
+    reactivespecies = proc.masterdissolvedspecies(flowregime)
+    microbialspecies = proc.mastermicrobialspecies(flowregime)
+    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
+    species = {**reactivespecies, **microbialspecies}
+
     vedge = 0.005
     velem = 0.01
-    vbc = 0.3
-    doc1 = 10 - gw
     por = 0.2
-    Bmo1 = 9 - gw
-    Bmn1 = 16 - gw
-    Bms1 = 21 - gw
-    Bma1 = 26 - gw
-    Bimo1 = 14 - gw
-    Bimn1 = 19 - gw
-    Bims1 = 24 - gw
-    Bima1 = 28 - gw
-    POM1 = 30 - gw
-    Amm1 = 12 - gw
-    nitra1 = 17 - gw
-    Nspecies = [Bmo1, Bmn1, Bms1, Bma1, Bimo1, Bimn1, Bims1, Bima1, POM1]
-    Cspecies = [doc1, Bmo1, Bmn1, Bms1, Bma1, Bimo1, Bimn1, Bims1, Bima1, POM1]
-    mft = np.zeros([(len(Trial) * len(Tforfpre)) * len(gvarnames), 12])
-    # dire = d + fpre + str(Trialhead)
-    sumall = np.zeros([(len(Trial) * len(Tforfpre)) * len(biomassgvarnames), 14])
-    for j in Tforfpre:
-        print(j)
-        di = d + j
-        for k in Trial:
-            df = np.load(di + fpre + str(k) + fsuf + fpre + str(k) + "_df.npy")
-            veliredg = df[2, 1:, yin, xright]
-            veliledg = df[2, 1:, yin, xleft]
-            veloredg = df[2, 1:, yout, xright]
-            veloledg = df[2, 1:, yout, xleft]
-            veloelem = df[2, 1:, yout, xleft + 1 : xright]
-            velielem = df[2, 1:, yin, xleft + 1 : xright]
-            velelem = df[2, 1:, yin + 1 : yout, xleft + 1 : xright]
-            vellelem = df[2, 1:, yin + 1 : yout, xleft]
-            velrelem = df[2, 1:, yin + 1 : yout, xright]
-            if gw == 1:
-                satielem = 1
-                satoelem = 1
-                satlelem = 1
-                satrelem = 1
-                satiredg = 1
-                satiledg = 1
-                satoledg = 1
-                satoredg = 1
-                satelem = 1
-            else:
-                satiredg = df[4, 1:, yin, xright]
-                satiledg = df[4, 1:, yin, xleft]
-                satoredg = df[4, 1:, yout, xright]
-                satoledg = df[4, 1:, yout, xleft]
-                satoelem = df[4, 1:, yout, xleft + 1 : xright]
-                satielem = df[4, 1:, yin, xleft + 1 : xright]
-                satlelem = df[4, 1:, yin + 1 : yout, xleft]
-                satrelem = df[4, 1:, yin + 1 : yout, xright]
-                satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-            for i in range(len(gvarnames)):
-                idx = (Tforfpre.index(j) * len(Trial) + Trial.index(k)) * len(
-                    gvarnames
-                ) + i
-                #            print (j,k, ": ", idx)
-                if type(k) == str:
-                    mft[idx, 0] = 0
-                else:
-                    mft[idx, 0] = Trial[Trial.index(k)]
-                mft[idx, 1] = Het[Trial.index(k)]
-                mft[idx, 2] = Anis[Trial.index(k)]
-                mft[idx, 3] = i
-                if gvarnames[i] == "Nitrogen":
-                    ninlet = 0
-                    noutlet = 0
-                    for n in Nspecies:
-                        ninlet = (
-                            ninlet
-                            + (
-                                sum(
-                                    df[n - 3, 1:, yin, xleft]
-                                    * satiledg
-                                    * veliledg
-                                    * vedge
-                                )
-                                + sum(
-                                    df[n - 3, 1:, yin, xright]
-                                    * satiredg
-                                    * veliredg
-                                    * vedge
-                                )
-                                + sum(
-                                    np.sum(
-                                        df[n - 3, 1:, yin, xleft + 1 : xright]
-                                        * satielem
-                                        * velielem
-                                        * velem,
-                                        axis=-1,
-                                    )
-                                )
-                            )
-                            / por
-                        )
-                        noutlet = (
+    
+    massfluxin = np.zeros([len(gvarnames)])
+    massfluxout = np.zeros([len(gvarnames)])
+    df = numpyarray
+    veliredg = df[2, 1:, yin, xright]
+    veliledg = df[2, 1:, yin, xleft]
+    veloredg = df[2, 1:, yout, xright]
+    veloledg = df[2, 1:, yout, xleft]
+    veloelem = df[2, 1:, yout, xleft + 1 : xright]
+    velielem = df[2, 1:, yin, xleft + 1 : xright]
+#    velelem = df[2, 1:, yin + 1 : yout, xleft + 1 : xright]
+#    vellelem = df[2, 1:, yin + 1 : yout, xleft]
+#    velrelem = df[2, 1:, yin + 1 : yout, xright]
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    elif flowregime == "Unsaturated":
+        satiredg = df[4, 1:, yin, xright]
+        satiledg = df[4, 1:, yin, xleft]
+        satoredg = df[4, 1:, yout, xright]
+        satoledg = df[4, 1:, yout, xleft]
+        satoelem = df[4, 1:, yout, xleft + 1 : xright]
+        satielem = df[4, 1:, yin, xleft + 1 : xright]
+#        satlelem = df[4, 1:, yin + 1 : yout, xleft]
+#        satrelem = df[4, 1:, yin + 1 : yout, xright]
+#        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+    for i in gvarnames:
+        idx = gvarnames.index(i)
+        if i == "Nitrogen":
+            Nspecies = mobilespecies + ["Particulate organic matter"]
+            ninlet = 0
+            noutlet = 0
+            for n in Nspecies:
+                ninlet = (
+                        ninlet
+                        + (sum(df[species[n]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
+                            + sum(df[species[n]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
+                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por)
+                noutlet = (
                             noutlet
-                            + (
-                                sum(
-                                    df[n - 3, 1:, yout, xleft]
-                                    * satoledg
-                                    * veloledg
-                                    * vedge
-                                )
-                                + sum(
-                                    df[n - 3, 1:, yout, xright]
-                                    * satoredg
-                                    * veloredg
-                                    * vedge
-                                )
-                                + sum(
-                                    np.sum(
-                                        df[n - 3, 1:, yout, xleft + 1 : xright]
-                                        * satoelem
-                                        * veloelem
-                                        * velem,
-                                        axis=-1,
-                                    )
-                                )
-                            )
-                            / por
+                        + (sum(df[species[n]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
+                            + sum(df[species[n]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
+                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yout, xleft + 1 : xright]*satoelem*veloelem*velem,axis=-1)))/por)
+            sumin = 0
+            sumout = 0
+            for r in ["Ammonium", "Nitrate"]:                            
+                rin = (
+                        sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
+                + sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
+                + sum(np.sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por
+                rout = (
+                        sum(df[reactivespecies[r]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
+                + sum(df[reactivespecies[r]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
+                + sum(                            np.sum(
+                        df[reactivespecies[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                        * satoelem
+                        * veloelem
+                        * velem,
+                        axis=-1,
                         )
-                    ninlet = (
-                        ninlet / 10
+                )) / por
+                sumin = sumin + rin
+                sumout = sumout + rout
+            massfluxin[idx] = ninlet/10 + sumin
+            massfluxout[idx] = noutlet/10 + sumout
+        elif i == "TOC":
+            cinlet = 0
+            coutlet = 0
+            for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+                cinlet = (
+                        cinlet
                         + (
-                            sum(
-                                df[Amm1 - 3, 1:, yin, xleft]
-                                * satiledg
-                                * veliledg
-                                * vedge
-                            )
-                            + sum(
-                                df[Amm1 - 3, 1:, yin, xright]
-                                * satiredg
-                                * veliredg
-                                * vedge
-                            )
-                            + sum(
-                                np.sum(
-                                    df[Amm1 - 3, 1:, yin, xleft + 1 : xright]
-                                    * satielem
-                                    * velielem
-                                    * velem,
-                                    axis=-1,
-                                )
-                            )
-                            + sum(
-                                df[nitra1 - 3, 1:, yin, xleft]
-                                * satiledg
-                                * veliledg
-                                * vedge
-                            )
-                            + sum(
-                                df[nitra1 - 3, 1:, yin, xright]
-                                * satiredg
-                                * veliredg
-                                * vedge
-                            )
-                            + sum(
-                                np.sum(
-                                    df[nitra1 - 3, 1:, yin, xleft + 1 : xright]
-                                    * satielem
-                                    * velielem
-                                    * velem,
-                                    axis=-1,
-                                )
-                            )
-                        )
-                        / por
-                    )
-                    noutlet = (
-                        noutlet / 10
-                        + (
-                            sum(
-                                df[Amm1 - 3, 1:, yout, xleft]
-                                * satoledg
-                                * veloledg
-                                * vedge
-                            )
-                            + sum(
-                                df[Amm1 - 3, 1:, yout, xright]
-                                * satoredg
-                                * veloredg
-                                * vedge
-                            )
-                            + sum(
-                                np.sum(
-                                    df[Amm1 - 3, 1:, yout, xleft + 1 : xright]
-                                    * satoelem
-                                    * veloelem
-                                    * velem,
-                                    axis=-1,
-                                )
-                            )
-                            + sum(
-                                df[nitra1 - 3, 1:, yout, xleft]
-                                * satoledg
-                                * veloledg
-                                * vedge
-                            )
-                            + sum(
-                                df[nitra1 - 3, 1:, yout, xright]
-                                * satoredg
-                                * veloredg
-                                * vedge
-                            )
-                            + sum(
-                                np.sum(
-                                    df[nitra1 - 3, 1:, yout, xleft + 1 : xright]
-                                    * satoelem
-                                    * veloelem
-                                    * velem,
-                                    axis=-1,
-                                )
-                            )
-                        )
-                        / por
-                    )
-                    mft[
-                        idx, 4
-                    ] = ninlet  # /(sum(velielem)*velem + (veliledg+veliredg)*vedge)
-                    mft[
-                        idx, 5
-                    ] = noutlet  # /(sum(veloelem)*velem + (veloledg+veloredg)*vedge)
-                elif gvarnames[i] == "TOC":
-                    cinlet = 0
-                    coutlet = 0
-                    for c in Cspecies:
-                        cinlet = (
-                            cinlet
-                            + (
-                                sum(
-                                    df[c - 3, 1:, yin, xleft]
-                                    * satiledg
-                                    * veliledg
-                                    * vedge
-                                )
-                                + sum(
-                                    df[c - 3, 1:, yin, xright]
-                                    * satiredg
-                                    * veliredg
-                                    * vedge
-                                )
-                                + sum(
-                                    np.sum(
-                                        df[c - 3, 1:, yin, xleft + 1 : xright]
-                                        * satielem
-                                        * velielem
-                                        * velem,
-                                        axis=-1,
-                                    )
-                                )
-                            )
-                            / por
-                        )
-                        coutlet = (
-                            coutlet
-                            + (
-                                sum(
-                                    df[c - 3, 1:, yout, xleft]
-                                    * satoledg
-                                    * veloledg
-                                    * vedge
-                                )
-                                + sum(
-                                    df[c - 3, 1:, yout, xright]
-                                    * satoredg
-                                    * veloredg
-                                    * vedge
-                                )
-                                + sum(
-                                    np.sum(
-                                        df[c - 3, 1:, yout, xleft + 1 : xright]
-                                        * satoelem
-                                        * veloelem
-                                        * velem,
-                                        axis=-1,
-                                    )
-                                )
-                            )
-                            / por
-                        )
-                    mft[
-                        idx, 4
-                    ] = cinlet  # /(sum(velielem)*velem + (veliledg+veliredg)*vedge)
-                    mft[
-                        idx, 5
-                    ] = coutlet  # /(sum(veloelem)*velem + (veloledg+veloredg)*vedge)
-                else:
-                    mft[idx, 4] = (
-                        sum(
-                            df[vars[i] - 3, 1:, yin, xleft]
+                        sum(                            df[species[c]['TecIndex'], 1:, yin, xleft]
                             * satiledg
                             * veliledg
                             * vedge
                         )
-                        + sum(
-                            df[vars[i] - 3, 1:, yin, xright]
-                            * satiredg
-                            * veliredg
-                            * vedge
-                        )
-                        + sum(
-                            np.sum(
-                                df[vars[i] - 3, 1:, yin, xleft + 1 : xright]
-                                * satielem
-                                * velielem
-                                * velem,
-                                axis=-1,
+                        + sum(                                df[species[c]['TecIndex'], 1:, yin, xright]
+                                * satiredg
+                                * veliredg
+                                * vedge
+                            )
+                        + sum(                                np.sum(
+                                    df[species[c]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                                    * satielem
+                                    * velielem
+                                    * velem,
+                                    axis=-1,
+                                )
                             )
                         )
-                    ) / por
-                    mft[idx, 5] = (
-                        sum(
-                            df[vars[i] - 3, 1:, yout, xleft]
+                        / por
+                    )
+                coutlet = (
+                    coutlet
+                    + (
+                        sum(                            df[species[c]['TecIndex'], 1:, yout, xleft]
                             * satoledg
                             * veloledg
                             * vedge
-                        )
-                        + sum(
-                            df[vars[i] - 3, 1:, yout, xright]
-                            * satoredg
-                            * veloredg
-                            * vedge
-                        )
-                        + sum(
-                            np.sum(
-                                df[vars[i] - 3, 1:, yout, xleft + 1 : xright]
-                                * satoelem
-                                * veloelem
-                                * velem,
-                                axis=-1,
+                            )
+                        + sum(                                df[species[c]['TecIndex'], 1:, yout, xright]
+                                * satoredg
+                                * veloredg
+                                * vedge
+                            )
+                        + sum(                                np.sum(
+                                    df[species[c]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                                    * satoelem
+                                    * veloelem
+                                    * velem,
+                                    axis=-1,
+                                )
                             )
                         )
-                    ) / por
-                # calculating removal in mass
-                mft[idx, 6] = mft[idx, 4] - mft[idx, 5]
-                # comparing removal with homogeneous case in the uniform flow rate scenario
-                mft[idx, 7] = (mft[idx, 6]) / mft[i, 6]
-                # comparing removal with heterogeneous case in the uniform flow rate scenario
-                mft[idx, 8] = (mft[idx, 6]) / mft[
-                    Trial.index(k) * len(gvarnames) + i, 6
-                ]
-                # time series index
-                mft[idx, 9] = Tforfpre.index(j)
-                # comparing removal with homogeneous case in the varying flow rate scenario
-                mft[idx, 10] = (mft[idx, 6]) / mft[
-                    Tforfpre.index(j) * len(Trial) * len(gvarnames) + i, 6
-                ]
-            total = 0
-            for b in range(len(biomassgvarnames)):
-                idxb = (Tforfpre.index(j) * len(Trial) + Trial.index(k)) * len(
-                    biomassgvarnames
-                ) + b
-                if type(k) == str:
-                    sumall[idxb, 0] = 0
-                else:
-                    sumall[idxb, 0] = Trial[Trial.index(k)]
-                sumall[idxb, 1] = Het[Trial.index(k)]
-                sumall[idxb, 2] = Anis[Trial.index(k)]
-                sumall[idxb, 3] = b
-                # total biomass in the domain
-                sumall[idxb, 4] = (
-                    por
-                    * (
-                        df[biomassvars[b] - 3, np.shape(df)[1] - 1, yin, xleft]
+                        / por
+                    )
+            massfluxin[idx] = cinlet
+            massfluxout[idx] = coutlet
+        else:
+            massfluxin[idx] = (
+                sum(                        df[species[i]['TecIndex'], 1:, yin, xleft]
                         * satiledg
-                        + df[biomassvars[b] - 3, np.shape(df)[1] - 1, yout, xleft]
-                        * satoledg
-                        + df[biomassvars[b] - 3, np.shape(df)[1] - 1, yin, xright]
+                        * veliledg
+                        * vedge
+                    )
+                + sum(                        df[species[i]['TecIndex'], 1:, yin, xright]
                         * satiredg
-                        + df[biomassvars[b] - 3, np.shape(df)[1] - 1, yout, xright]
-                        * satoredg
+                        * veliredg
+                        * vedge
                     )
-                    * vedge
-                    * vedge
-                    + (
-                        sum(
-                            df[
-                                biomassvars[b] - 3,
-                                np.shape(df)[1] - 1,
-                                yin,
-                                xleft + 1 : xright,
-                            ]
+                + sum(                        np.sum(
+                            df[species[i]['TecIndex'], 1:, yin, xleft + 1 : xright]
                             * satielem
+                            * velielem
+                            * velem,
+                            axis=-1,
                         )
-                        + sum(
-                            df[
-                                biomassvars[b] - 3,
-                                np.shape(df)[1] - 1,
-                                yout,
-                                xleft + 1 : xright,
-                            ]
+                    )
+                    ) / por
+            massfluxout[idx] = (                    sum(                        df[species[i]['TecIndex'], 1:, yout, xleft]
+                        * satoledg
+                        * veloledg
+                        * vedge
+                    )
+                    + sum(                        df[species[i]['TecIndex'], 1:, yout, xright]
+                        * satoredg
+                        * veloredg
+                        * vedge
+                    )
+                    + sum(                        np.sum(                            df[species[i]['TecIndex'], 1:, yout, xleft + 1 : xright]
                             * satoelem
-                        )
-                        + sum(
-                            df[
-                                biomassvars[b] - 3,
-                                np.shape(df)[1] - 1,
-                                yin + 1 : yout,
-                                xleft,
-                            ]
-                            * satlelem
-                        )
-                        + sum(
-                            df[
-                                biomassvars[b] - 3,
-                                np.shape(df)[1] - 1,
-                                yin + 1 : yout,
-                                xright,
-                            ]
-                            * satrelem
+                            * veloelem
+                            * velem,
+                                axis=-1,
                         )
                     )
-                    * vedge
-                    * velem
-                ) + por * (
-                    sum(
-                        sum(
-                            df[
-                                biomassvars[b] - 3,
-                                np.shape(df)[1] - 1,
-                                yin + 1 : yout,
-                                xleft + 1 : xright,
-                            ]
-                            * satelem
-                        )
-                    )
-                    * velem
-                    * velem
-                )
-                total = total + sumall[idxb, b]
-                # comparing biomass with homogeneous case in the uniform flow rate scenario
-                sumall[idxb, 5] = (sumall[idxb, 4]) / sumall[b, 4]
-                # comparing biomass with heterogeneous case in the uniform flow rate scenario
-                sumall[idxb, 6] = (sumall[idxb, 4]) / sumall[
-                    Trial.index(k) * len(biomassgvarnames) + b, 4
-                ]
-                # comparing biomass with homogenous case in the varying flow rate scenario
-                sumall[idxb, 7] = (sumall[idxb, 4]) / sumall[
-                    Tforfpre.index(j) * len(Trial) * len(biomassgvarnames) + b, 4
-                ]
-                # time series index
-                sumall[idxb, 8] = Tforfpre.index(j)
-            #            total = np.sum(sumall[idxb-11:idxb+1,4])
-            #            print (k,j)
-            for g in range(len(biomassgvarnames)):
-                idxk = (Tforfpre.index(j) * len(Trial) + Trial.index(k)) * len(
-                    biomassgvarnames
-                ) + g
-                # calculating fraction of species with total biomass in the domain
-                sumall[idxk, 9] = sumall[idxk, 4] / total
-                # comparing the fraction of species with homogeneous case in the uniform flow rate scenario
-                sumall[idxk, 10] = sumall[idxk, 9] / sumall[g, 9]
-                # comparing the fraction of species with heterogeneous case in the uniform flow rate scenario
-                sumall[idxk, 11] = (
-                    sumall[idxk, 9]
-                    / sumall[Trial.index(k) * len(biomassgvarnames) + g, 9]
-                )
-                # comparing the fraction of species with homogeneous case in the varying flow rate scenario
-                sumall[idxk, 12] = (
-                    sumall[idxk, 9]
-                    / sumall[
-                        Tforfpre.index(j) * len(Trial) * len(biomassgvarnames) + g, 9
-                    ]
-                )
-    return mft, sumall
-
+                ) / por
+    return massfluxin, massfluxout
 
 def calcmassfluxtime(
     Trialhead, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
@@ -695,13 +383,13 @@ def calcconcmasstime(
     Nspecies = [Bmo1, Bmn1, Bms1, Bma1, Bimo1, Bimn1, Bims1, Bima1, POM1]
     Cspecies = [doc1, Bmo1, Bmn1, Bms1, Bma1, Bimo1, Bimn1, Bims1, Bima1, POM1]
     massendtime = np.zeros([len(gvarnames)])
-    massendtimey = np.zeros([51, len(gvarnames)])
-    massendtimey[:, 0] = range(51)
+    massendtimey = np.zeros([yout + 1, len(gvarnames)])
+    massendtimey[:, 0] = range(yout + 1)
     di = directory + fpre + str(Trial) + fsuf
     print(str(Trial))
     df = np.load(di + fpre + str(Trial) + "_df.npy")
-    masstime = np.zeros([np.shape(df)[1], 51, len(gvarnames)])
-    conctime = np.zeros([np.shape(df)[1], 51, len(gvarnames)])
+    masstime = np.zeros([np.shape(df)[1], yout + 1, len(gvarnames)])
+    conctime = np.zeros([np.shape(df)[1], yout + 1, len(gvarnames)])
     veliredg = df[2, 1:, yin, xright]
     veliledg = df[2, 1:, yin, xleft]
     veloredg = df[2, 1:, yout, xright]
@@ -955,9 +643,9 @@ def calcconcmasstime(
         + np.sum(veloelem)
     ) * velem
     #    Velocity = np.mean ([InVelocity, OutVelocity, MidVelocity])
-    Velocity = df[2, np.shape(df)[1] - 1, :, :]
+    Velocity = df[2, - 1, :, :]
     Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
-    return df, massendtime, masstime, conctime, np.mean(Velocity), Headinlettime
+    return df, massendtime, masstime, conctime, TotalFlow, Headinlettime
 
 
 def calcconcmasstimeX(

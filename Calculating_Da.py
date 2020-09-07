@@ -27,6 +27,42 @@ chem_path_data = r"Y:\Home\khurana\4. Publications\Restructuring\Paper1\Figureco
 chemdata = pd.read_csv(chem_path_data, sep = '\t')
 chemdata.columns
 chemdata.Chem.unique()
+
+velocity = [0.00038, 0.0038, 0.038]
+Pelist = [2, 11, 22]
+
+for pe, vel, Reg in zip(Pelist, velocity,Regimes):
+        chemdata.loc[(chemdata.Regime == Reg), 'Velocity'] = vel
+        chemdata.loc[chemdata.Regime == Reg, 'Pe'] = pe
+        for c in chemdata.Chem.unique().tolist():
+            base = chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c) & (chemdata.Trial == 'H')]['reldelmassflux'].values[0]
+#            print(base)
+            chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c), 'base'] = base
+
+chemdata['fraction_rel_delmf'] = chemdata.reldelmassflux/chemdata.base
+chemdata['avgconc_in'] = chemdata.Inlet_total_mass_flux*0.2/(chemdata.Velocity*0.3)
+chemdata['avgconc_out'] = chemdata.Outlet_mass_flux*0.2/(chemdata.Velocity*0.3)
+chemdata['removal'] = (chemdata['avgconc_in'] - chemdata['avgconc_out']).abs()
+chemdata['removal_rate'] = chemdata['removal']/chemdata['Breakthroughtime']
+chemdata['conc_Da'] = chemdata['removal_rate']*chemdata['Breakthroughtime']
+chemdata["%reldelmassflux"] = chemdata["reldelmassflux"]*100
+chemdata["%del2massflux"] = chemdata["del2massflux"]*100
+chemdata["%fraction_rel_delmf"] = chemdata["fraction_rel_delmf"]*100
+chemdata['PeDa'] = chemdata['conc_Da'] / chemdata['Pe'] #this transformation is promising
+
+for Reg in Regimes:
+    for c in chemdata.Chem.unique().tolist():
+        base1 = chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c) & (chemdata.Trial == 'H')]['conc_Da'].values[0]
+        chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c), 'Dabase'] = base1
+        base2 = chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c) & (chemdata.Trial == 'H')]['PeDa'].values[0]
+        chemdata.loc[(chemdata.Regime == Reg) & (chemdata.Chem == c), 'PeDabase'] = base2
+
+chemdata['fraction_da'] = chemdata.conc_Da/chemdata.Dabase
+chemdata['fraction_PeDa'] = chemdata.PeDa/chemdata.PeDabase
+chemdata["%fraction_da"] = chemdata["fraction_da"]*100
+chemdata['%fraction_PeDa'] = chemdata.fraction_PeDa*100
+chemdata.to_csv("Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/Conc_da_ss.csv", sep = "\t")
+
 gvarnames = ["DO", "Ammonium", "Nitrate"]
 chemsubset = chemdata[chemdata['Chem'].isin (gvarnames)]
 chemsubset.shape

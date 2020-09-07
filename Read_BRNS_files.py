@@ -177,3 +177,30 @@ plt.xlim(left = 0.00001)
 plt.xlabel ("Dammkohler number")
 plt.ylabel ("Normalized removal")
 plt.legend(title = "Pe")
+
+#Figure S6 Comparison of Da numbers - mass flux derived numbers and volumetrically averaged rates
+#Explore how mass flux derived rate can differ from volunetrically derived rates for a discussion on Da in both spatial heterogeneity and temporal heterogeneity
+alldata = pd.read_csv("X:\Pap1_discussion\PE_Da_chem_summary.csv", sep = '\t')
+alldata["%reldelmassflux"] = alldata["reldelmassflux"]*100
+alldata["Ratio_MF_VRate"] = alldata['Massflux_MeanRate']/alldata['Volumetric_MeanRate']
+
+data = alldata[alldata['Scenario'].isin([1,2,3,4,5,7,8,22,23,24,25, 26, 27, 28, 29])]
+
+dummy = sns.boxplot( x=data["Chem"], y=data["Ratio_MF_VRate"], hue = data["Pe"], palette=my_pal)
+
+medians = data.groupby(['Chem', 'Pe'])["Ratio_MF_VRate"].median().values
+nobs = data['Chem'].value_counts().values
+nobs = [str(x) for x in nobs.tolist()]
+nobs = ["n: " + i for i in nobs]
+ 
+# Add it to the plot
+pos = range(len(nobs))
+for tick,label in zip(pos,dummy.get_xticklabels()):
+    dummy.text(pos[tick], medians[tick] + 0.03, nobs[tick], horizontalalignment='center', size=12, color='k', weight='semibold')
+
+plt.ylabel("Ratio", fontsize = 15)
+plt.xlabel ("Reactive species", fontsize = 15)
+
+plt.title("Ratio of concentration derived rate and\n volumetrically averaged rate", fontsize = 15)
+pic = dummy.get_figure()
+pic.savefig("Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/FigureS6_Ratio_MF_Vol_Rate.png",pi = 300, bbox_inches = 'tight', pad_inches = 0.1)
