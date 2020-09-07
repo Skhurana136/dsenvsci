@@ -443,92 +443,68 @@ def calcmassflux(
     return mf
 
 
-def calcsum(
-    Trial,
-    Het,
-    Anis,
-    gw,
-    directory,
-    fpre,
-    fsuf,
-    yin,
-    yout,
-    xleft,
-    xright,
-    vars,
-    gvarnames,
-):
+def calcsum(data,yin,yout,xleft,xright,gvarnames,flowregime):
+    import data_reader.data_processing as proc
+    species = proc.mastermicrobialspecies("Saturated")
     vedge = 0.005
     velem = 0.01
-    vbc = 0.3
     por = 0.2
+    df = data
     #    sumall = np.zeros([len(Trial)*len(vars),9])
-    sumall = np.zeros([len(Trial) * len(vars), 7])
-    for j in range(len(Trial)):
-        di = directory + fpre + str(Trial[j]) + fsuf
-        print(str(Trial[j]))
-        df = np.load(di + fpre + str(Trial[j]) + "_df.npy")
-        if gw == 1:
-            satielem = 1
-            satoelem = 1
-            satlelem = 1
-            satrelem = 1
-            satiredg = 1
-            satiledg = 1
-            satoledg = 1
-            satoredg = 1
-            satelem = 1
-        else:
-            satielem = df[4, np.shape(df)[1] - 1, yin, xleft + 1 : xright]
-            satoelem = df[4, np.shape(df)[1] - 1, yout, xleft + 1 : xright]
-            satiredg = df[4, np.shape(df)[1] - 1, yin, xright]
-            satiledg = df[4, np.shape(df)[1] - 1, yin, xright]
-            satoledg = df[4, np.shape(df)[1] - 1, yout, xleft]
-            satoredg = df[4, np.shape(df)[1] - 1, yout, xright]
-            satlelem = df[4, np.shape(df)[1] - 1, yin + 1 : yout, xleft]
-            satrelem = df[4, np.shape(df)[1] - 1, yin + 1 : yout, xright]
-            satelem = df[4, np.shape(df)[1] - 1, yin + 1 : yout, xleft + 1 : xright]
-        for i in range(len(gvarnames)):
-            idx = j * len(gvarnames) + i
-            sumall[idx, 0] = Trial[1] + j
-            sumall[idx, 1] = Het[j]
-            sumall[idx, 2] = Anis[j]
-            sumall[idx, 3] = i
-            sumall[idx, 4] = (
+    sumall = np.zeros([len(gvarnames)])
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    else:
+        satielem = df[4, -1, yin, xleft + 1 : xright]
+        satoelem = df[4, -1, yout, xleft + 1 : xright]
+        satiredg = df[4, -1, yin, xright]
+        satiledg = df[4, -1, yin, xright]
+        satoledg = df[4, -1, yout, xleft]
+        satoredg = df[4, -1, yout, xright]
+        satlelem = df[4, -1, yin + 1 : yout, xleft]
+        satrelem = df[4, -1, yin + 1 : yout, xright]
+        satelem = df[4, -1, yin + 1 : yout, xleft + 1 : xright]
+    for g in gvarnames:
+        idx = gvarnames.index(g)
+        sumall[idx] = (
                 (
                     (
-                        df[vars[i] - 3, np.shape(df)[1] - 1, yin, xleft] * satiledg
-                        + df[vars[i] - 3, np.shape(df)[1] - 1, yout, xleft] * satoledg
-                        + df[vars[i] - 3, np.shape(df)[1] - 1, yin, xright] * satiredg
-                        + df[vars[i] - 3, np.shape(df)[1] - 1, yout, xright] * satoredg
+                        df[species[g]['TecIndex'], -1, yin, xleft] * satiledg
+                        + df[species[g]['TecIndex'], -1, yout, xleft] * satoledg
+                        + df[species[g]['TecIndex'], -1, yin, xright] * satiredg
+                        + df[species[g]['TecIndex'], -1, yout, xright] * satoredg
                     )
                     * vedge
                     * vedge
                     + (
                         sum(
-                            df[
-                                vars[i] - 3,
-                                np.shape(df)[1] - 1,
+                            df[species[g]['TecIndex'],
+                                -1,
                                 yin,
                                 xleft + 1 : xright,
                             ]
                             * satielem
                         )
-                        + sum(
-                            df[
-                                vars[i] - 3,
-                                np.shape(df)[1] - 1,
+                        + sum(df[species[g]['TecIndex'],
+                                -1,
                                 yout,
                                 xleft + 1 : xright,
                             ]
                             * satoelem
                         )
                         + sum(
-                            df[vars[i] - 3, np.shape(df)[1] - 1, yin + 1 : yout, xleft]
+                            df[species[g]['TecIndex'], -1, yin + 1 : yout, xleft]
                             * satlelem
                         )
-                        + sum(
-                            df[vars[i] - 3, np.shape(df)[1] - 1, yin + 1 : yout, xright]
+                        + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xright]
                             * satrelem
                         )
                     )
@@ -537,9 +513,8 @@ def calcsum(
                 )
                 + sum(
                     sum(
-                        df[
-                            vars[i] - 3,
-                            np.shape(df)[1] - 1,
+                        df[species[g]['TecIndex'],
+                            -1,
                             yin + 1 : yout,
                             xleft + 1 : xright,
                         ]
@@ -549,15 +524,6 @@ def calcsum(
                 * velem
                 * velem
             ) * por
-            sumall[idx, 5] = (sumall[idx, 4]) / sumall[i, 4]
-        total = np.sum(sumall[idx - 11 : idx + 1, 4])
-        for k in range(len(gvarnames)):
-            idxk = j * len(gvarnames) + k
-            sumall[idxk, 6] = sumall[idxk, 4] / total
-            # comparing the fraction of species with homogeneous case in the uniform flow rate scenario
-    #            sumall[idxk,7] = sumall[idxk,6]/sumall[i,6]
-    # comparing the fraction of species with homogeneous case in the varying flow rate scenario
-    #            sumall[idxk,8] = sumall[idxk,6]/sumall[Trial.index(k)*len(gvarnames)+k,6]
     return sumall
 
 

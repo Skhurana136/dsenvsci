@@ -11,6 +11,269 @@ import seaborn as sns
 import pandas as pd
 from scipy import signal
 
+def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
+    import data_reader.data_processing as proc
+    reactivespecies = proc.masterdissolvedspecies(flowregime)
+    microbialspecies = proc.mastermicrobialspecies(flowregime)
+    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
+    species = {**reactivespecies, **microbialspecies}
+
+    vedge = 0.005
+    velem = 0.01
+
+    df = numpyarray
+    
+    conctime = np.zeros([np.shape(df)[1], nodesinydirection, len(gvarnames)])    
+    veliredg = df[2, 1:, yin, xright]
+    veliledg = df[2, 1:, yin, xleft]
+    veloredg = df[2, 1:, yout, xright]
+    veloledg = df[2, 1:, yout, xleft]
+    veloelem = df[2, 1:, yout, xleft + 1 : xright]
+    velielem = df[2, 1:, yin, xleft + 1 : xright]
+    velelem = df[2, 1:, yin + 1 : yout, xleft + 1 : xright]
+    vellelem = df[2, 1:, yin + 1 : yout, xleft]
+    velrelem = df[2, 1:, yin + 1 : yout, xright]
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    elif flowregime == "Unsaturated":
+        satiredg = df[4, 1:, yin, xright]
+        satiledg = df[4, 1:, yin, xleft]
+        satoredg = df[4, 1:, yout, xright]
+        satoledg = df[4, 1:, yout, xleft]
+        satoelem = df[4, 1:, yout, xleft + 1 : xright]
+        satielem = df[4, 1:, yin, xleft + 1 : xright]
+        satlelem = df[4, 1:, yin + 1 : yout, xleft]
+        satrelem = df[4, 1:, yin + 1 : yout, xright]
+        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+    for i in gvarnames:
+        idx = gvarnames.index(i)
+        if i == "Nitrogen":
+           Nspecies = mobilespecies + ["Particulate organic matter"]
+           ninlet = 0
+           noutlet = 0
+           for n in Nspecies:
+               ninlet = ninlet + (
+                   df[species[n]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
+                   + df[species[n]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                   + np.sum(
+                       df[species[n]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                       * satielem
+                       * velielem
+                       * velem,
+                       axis=-1,
+                   )
+               ) / (
+                   vedge * (veliredg + veliledg)
+                   + np.sum(velem * velielem, axis=-1)
+               )
+               noutlet = noutlet + (
+                   df[species[n]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
+                   + df[species[n]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                   + np.sum(
+                       df[species[n]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                       * satoelem
+                       * veloelem
+                       * velem,
+                       axis=-1,
+                   )
+                   ) / (
+                   vedge * (veloredg + veloledg)
+                   + np.sum(velem * veloelem, axis=-1)
+               )
+           sumin = 0
+           sumout = 0
+           for r in ["Ammonium", "Nitrate"]:
+               sumin = sumin + (
+                   df[reactivespecies[r]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
+                   + df[reactivespecies[r]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                   + np.sum(
+                       df[reactivespecies[r]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                       * satielem
+                       * velielem
+                       * velem,
+                       axis=-1,
+                   )
+               ) / (
+                   vedge * (veliredg + veliledg)
+                   + np.sum(velem * velielem, axis=-1)
+               )
+               sumout = sumout + (
+                   df[reactivespecies[r]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
+                   + df[reactivespecies[r]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                   + np.sum(
+                       df[reactivespecies[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                       * satoelem
+                       * veloelem
+                       * velem,
+                       axis=-1,
+                   )
+                   ) / (
+                   vedge * (veloredg + veloledg)
+                   + np.sum(velem * veloelem, axis=-1))
+            
+           conctime[1:, yin, idx] = ninlet / 10 + sumin
+           conctime[1:, yout, idx] = noutlet / 10 + sumout  
+        elif i == "TOC":
+           cinlet = 0
+           coutlet = 0
+           for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+               cinlet = cinlet + (
+                       df[species[c]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
+                       + df[species[c]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                       + np.sum(
+                        df[species[c]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                        * satielem
+                        * velielem
+                        * velem,
+                        axis=-1)) / (vedge * (veliredg + veliledg)+ np.sum(velem * velielem, axis=-1))
+               coutlet = coutlet + (
+                    df[species[c]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
+                    + df[species[c]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                    + np.sum(
+                        df[species[c]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                        * satoelem
+                        * veloelem
+                        * velem,
+                        axis=-1,
+                    )
+                ) / (
+                    vedge * (veloredg + veloledg)
+                    + np.sum(velem * veloelem, axis=-1)
+                )
+           conctime[1:, yin, idx] = cinlet
+           conctime[1:, yout, idx] = coutlet
+        else:
+           conctime[1:, yin, idx] = (
+                    (
+                        df[species[i]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg
+                        + df[species[i]['TecIndex'], 1:, yin, xright] * satiredg * veliredg
+                    )
+                    * (vedge)
+                    + (np.sum(df[species[i]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                            * satielem
+                            * velielem,
+                            axis=-1))* velem) / (vedge * (veliredg + veliledg) + velem*np.sum(velielem, axis=-1))
+           conctime[1:, yout, idx] = (
+                    (
+                        df[species[i]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg
+                        + df[species[i]['TecIndex'], 1:, yout, xright] * satoredg * veloredg
+                    )
+                    * (vedge)
+                    + (
+                        np.sum(
+                            df[species[i]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                            * satoelem
+                            * veloelem,
+                            axis=-1,
+                        )
+                    )
+                    * velem
+                ) / (vedge * (veloredg + veloledg) + np.sum(velem * veloelem, axis=-1))
+           conctime[1:, yin + 1 : yout, idx] = (
+                    np.sum(
+                        df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
+                        * satelem
+                        * velem
+                        * velelem,
+                        axis=-1,
+                    )
+                    + (
+                        df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem * vellelem
+                        + df[species[i]['TecIndex'], 1:, yin + 1 : yout, xright]
+                        * satrelem
+                        * velrelem
+                    )
+                    * vedge
+                ) / (vedge * (vellelem + velrelem) + np.sum(velem * velelem, axis=-1))
+
+    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * vedge + (
+        np.sum(vellelem)
+        + np.sum(velrelem)
+        + np.sum(velelem)
+        + np.sum(velielem)
+        + np.sum(veloelem)
+    ) * velem
+    
+    Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
+    
+    return conctime, TotalFlow, Headinlettime
+
+def conc_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
+    
+    massflux_amplitude = np. zeros([len(gvarnames)])
+    normavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
+    
+    conctime, TotalFlow, Headinlettime = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    
+    for g in gvarnames:
+        normavgconcout[:, gvarnames.index(g)] = conctime[:, yout, gvarnames.index(g)] / np.mean(conctime[:, yout, gvarnames.index(g)])
+    
+    for g in gvarnames:
+        f, Pxx_spec = signal.periodogram(normavgconcout[:, gvarnames.index(g)], scaling="spectrum")
+        massflux_amplitude[gvarnames.index(g)] = np.sqrt(Pxx_spec.max())
+
+    return massflux_amplitude
+
+def mass_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
+    
+    mass_amplitude = np. zeros([len(gvarnames)])
+    normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
+    
+    masstime, conctime = biomasstimefunc (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    
+    for g in gvarnames:
+        normavgmass[:, gvarnames.index(g)] = masstime[:, yout, gvarnames.index(g)] / np.mean(masstime[:, yout, gvarnames.index(g)])
+    
+    for g in gvarnames:
+        f, Pxx_spec = signal.periodogram(normavgmass[:, gvarnames.index(g)], scaling="spectrum")
+        mass_amplitude[gvarnames.index(g)] = np.sqrt(Pxx_spec.max())
+
+    return mass_amplitude
+
+def correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
+    df = numpyarray
+    conctime0, TotalFlow, Headinlettime0 = calcconcmasstimenew (df,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    corrchem = np.zeros([2 * np.shape(Headinlettime0)[0], (len(gvarnames))])
+    normavgconcout = np.zeros([np.shape(df)[1], len(gvarnames)])
+    
+    for g in gvarnames:
+        k = gvarnames.index(g)
+        normavgconcout[:, k] = conctime0[:, yout, k] - np.mean(conctime0[:, yout, k])
+        normheadin = Headinlettime0 - np.mean(Headinlettime0)
+        for k in range(len(gvarnames)):
+            corrchem[:, k] = np.correlate(normavgconcout[:, k], normheadin, "full") / (
+                (np.std(conctime0[:, yout, k]))
+                * (np.std(Headinlettime0) * np.shape(Headinlettime0)[0])
+            )
+
+    return corrchem, Headinlettime0
+
+def mass_correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
+    data = numpyarray
+    masstime, conctime = biomasstimefunc (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    conctime, TotalFlow, Headinlettime0 = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    corrchem = np.zeros([2 * np.shape(Headinlettime0)[0], (len(gvarnames))])
+    normavgmass = np.zeros([np.shape(data)[1], len(gvarnames)])
+    
+    for g in gvarnames:
+        k = gvarnames.index(g)
+        normavgmass[:, k] = masstime[:, yout, k] - np.mean(masstime[:, yout, k])
+        normheadin = Headinlettime0 - np.mean(Headinlettime0)
+        for k in range(len(gvarnames)):
+            corrchem[:, k] = np.correlate(normavgmass[:, k], normheadin, "full") / (
+                (np.std(masstime[:, yout, k]))
+                * (np.std(Headinlettime0) * np.shape(Headinlettime0)[0])
+            )
+
+    return corrchem, Headinlettime0
 
 #def calcmft_temp(Tforfpre, Trial, gvarnames, d, yin, yout, xleft, xright, fpre, fsuf, Het, Anis):
 def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):            
@@ -991,21 +1254,17 @@ def calcconcmasstimeX(
     return df, massendtime, masstime, conctime, np.mean(Velocity)
 
 
-def biomasstimefunc(
-    Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, biomassvars
-):
+def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, biomassvargnames, flowregime):
+    import data_reader.data_processing as proc
     vedge = 0.005
     velem = 0.01
     vbc = 0.3
-    biomassendtime = np.zeros([len(biomassvars)])
-    biomassendtimey = np.zeros([51, len(biomassvars)])
-    biomassendtimey[:, 0] = range(51)
-    di = d + fpre + str(Trial) + fsuf
-    print(str(Trial))
-    df = np.load(di + fpre + str(Trial) + "_df.npy")
-    biomasstime = np.zeros([np.shape(df)[1] - 1, 51, len(biomassvars)])
-    bioconctime = np.zeros([np.shape(df)[1] - 1, 51, len(biomassvars)])
-    if gw == 1:
+    df = numpyarray
+    biomasstime = np.zeros([np.shape(df)[1]-1, nodesinydirection,  len(biomassvargnames)])
+    bioconctime = np.zeros([np.shape(df)[1]-1, nodesinydirection, len(biomassvargnames)])
+    species = proc.mastermicrobialspecies("Saturated")
+    
+    if flowregime == "Saturated":
         satielem = 1
         satoelem = 1
         satlelem = 1
@@ -1015,244 +1274,6 @@ def biomasstimefunc(
         satoledg = 1
         satoredg = 1
         satelem = 1
-        for i in range(len(biomassvars)):
-            biomassendtime[i] = (
-                (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 1, yin, xleft] * satiledg
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 1, yin, xright]
-                    * satiredg
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 1, yout, xleft]
-                    * satoledg
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 1, yout, xright]
-                    * satoredg
-                )
-                * (vedge ** 2)
-                + sum(
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout - 1,
-                            xleft + 1 : xright - 1,
-                        ]
-                        * satelem
-                        * (velem ** 2)
-                    )
-                )
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin,
-                            xleft + 1 : xright - 1,
-                        ]
-                        * satielem
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yout,
-                            xleft + 1 : xright - 1,
-                        ]
-                        * satoelem
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout - 1,
-                            xleft,
-                        ]
-                        * satlelem
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout - 1,
-                            xright,
-                        ]
-                        * satrelem
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yin, i] = (
-                (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 1, yin, xleft] * satiledg
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 1, yin, xright]
-                    * satiredg
-                )
-                * (vedge ** 2)
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin,
-                            xleft + 1 : xright,
-                        ]
-                        * satielem
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yout, i] = (
-                (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 1, yout, xleft] * satoledg
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 1, yout, xright]
-                    * satoredg
-                )
-                * (vedge ** 2)
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satoelem
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yin + 1 : yout, i] = (
-                sum(
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satelem
-                        * (velem ** 2)
-                    )
-                )
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout,
-                            xleft,
-                        ]
-                        * satlelem
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 1,
-                            yin + 1 : yout,
-                            xright,
-                        ]
-                        * satrelem
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomasstime[:, yin, i] = (
-                (
-                    df[biomassvars[i] - 3, 1:, yin, xleft] * satiledg
-                    + df[biomassvars[i] - 3, 1:, yin, xright] * satiredg
-                )
-                * (vedge ** 2)
-                + (
-                    np.sum(
-                        df[biomassvars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem,
-                        axis=-1,
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomasstime[:, yout, i] = (
-                (
-                    df[biomassvars[i] - 3, 1:, yout, xleft] * satoledg
-                    + df[biomassvars[i] - 3, 1:, yout, xright] * satoredg
-                )
-                * (vedge ** 2)
-                + (
-                    np.sum(
-                        df[biomassvars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
-                        axis=-1,
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomasstime[:, yin + 1 : yout, i] = (
-                np.sum(
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
-                    * satelem
-                    * (velem ** 2),
-                    axis=-1,
-                )
-                + (
-                    (
-                        df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
-                        + df[biomassvars[i] - 3, 1:, yin + 1 : yout, xright]
-                    )
-                    * satrelem
-                )
-                * velem
-                * vedge
-            )
-            bioconctime[:, yin, i] = (
-                (
-                    df[biomassvars[i] - 3, 1:, yin, xleft] * satiledg
-                    + df[biomassvars[i] - 3, 1:, yin, xright] * satiredg
-                )
-                * (vedge ** 2)
-                + (
-                    np.sum(
-                        df[biomassvars[i] - 3, 1:, yin, xleft + 1 : xright - 1]
-                        * satielem,
-                        axis=-1,
-                    )
-                )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
-            bioconctime[:, yout, i] = (
-                (
-                    df[biomassvars[i] - 3, 1:, yout, xleft] * satoledg
-                    + df[biomassvars[i] - 3, 1:, yout, xright] * satoredg
-                )
-                * (vedge ** 2)
-                + (
-                    np.sum(
-                        df[biomassvars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
-                        axis=-1,
-                    )
-                )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
-            bioconctime[:, yin + 1 : yout, i] = (
-                np.sum(
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
-                    * satelem
-                    * (velem ** 2),
-                    axis=-1,
-                )
-                + (
-                    (
-                        df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
-                        + df[biomassvars[i] - 3, 1:, yin + 1 : yout, xright]
-                    )
-                    * satrelem
-                )
-                * velem
-                * vedge
-            ) / (vbc * velem)
     else:
         satielem = df[4, 1:, yin, xleft + 1 : xright]
         satoelem = df[4, 1:, yout, xleft + 1 : xright]
@@ -1263,239 +1284,95 @@ def biomasstimefunc(
         satoledg = df[4, 1:, yout, xleft]
         satoredg = df[4, 1:, yout, xright]
         satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-        for i in range(len(biomassvars)):
-            biomassendtime[i] = (
+    for b in biomassvargnames:
+        i = biomassvargnames.index(b)
+        biomasstime[:, yin, i] = (
                 (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 2, yin, xleft]
-                    * satiledg[int(np.shape(df)[1]) - 2]
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 2, yin, xright]
-                    * satiredg[int(np.shape(df)[1]) - 2]
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 2, yout, xleft]
-                    * satoledg[int(np.shape(df)[1]) - 2]
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 2, yout, xright]
-                    * satoredg[int(np.shape(df)[1]) - 2]
-                )
-                * (vedge ** 2)
-                + sum(
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satelem[int(np.shape(df)[1]) - 2, :, :]
-                        * (velem ** 2)
-                    )
-                )
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin,
-                            xleft + 1 : xright,
-                        ]
-                        * satielem[np.shape(df)[1] - 2, :]
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satoelem[np.shape(df)[1] - 2, :]
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xleft,
-                        ]
-                        * satlelem[np.shape(df)[1] - 2, :]
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xright,
-                        ]
-                        * satrelem[np.shape(df)[1] - 2, :]
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yin, i] = (
-                (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 2, yin, xleft]
-                    * satiledg[np.shape(df)[1] - 2]
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 2, yin, xright]
-                    * satiredg[np.shape(df)[1] - 2]
-                )
-                * (vedge ** 2)
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin,
-                            xleft + 1 : xright,
-                        ]
-                        * satielem[np.shape(df)[1] - 2, :]
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yout, i] = (
-                (
-                    df[biomassvars[i] - 3, np.shape(df)[1] - 2, yout, xleft]
-                    * satoledg[np.shape(df)[1] - 2]
-                    + df[biomassvars[i] - 3, np.shape(df)[1] - 2, yout, xright]
-                    * satoredg[np.shape(df)[1] - 2]
-                )
-                * (vedge ** 2)
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satoelem[np.shape(df)[1] - 2, :]
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomassendtimey[yin + 1 : yout, i] = (
-                sum(
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satelem[np.shape(df)[1] - 2, :, :]
-                        * (velem ** 2)
-                    )
-                )
-                + (
-                    sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xleft,
-                        ]
-                        * satlelem[np.shape(df)[1] - 2, :]
-                    )
-                    + sum(
-                        df[
-                            biomassvars[i] - 3,
-                            np.shape(df)[1] - 2,
-                            yin + 1 : yout,
-                            xright,
-                        ]
-                        * satrelem[np.shape(df)[1] - 2, :]
-                    )
-                )
-                * velem
-                * vedge
-            )
-            biomasstime[:, yin, i] = (
-                (
-                    df[biomassvars[i] - 3, 1:, yin, xleft] * satiledg
-                    + df[vars[i] - 3, 1:, yin, xright] * satiredg
+                    df[species[b]['TecIndex'], 1:, yin, xleft] * satiledg
+                    + df[species[b]['TecIndex'], 1:, yin, xright] * satiredg
                 )
                 * (vedge ** 2)
                 + (
                     np.sum(
-                        df[biomassvars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem,
+                        df[species[b]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
                         axis=-1,
                     )
                 )
                 * velem
                 * vedge
             )
-            biomasstime[:, yout, i] = (
+        biomasstime[:, yout, i] = (
                 (
-                    df[biomassvars[i] - 3, 1:, yout, xleft] * satoledg
-                    + df[vars[i] - 3, 1:, yout, xright] * satoredg
+                    df[species[b]['TecIndex'], 1:, yout, xleft] * satoledg
+                    + df[species[b]['TecIndex'], 1:, yout, xright] * satoredg
                 )
                 * (vedge ** 2)
                 + (
                     np.sum(
-                        df[biomassvars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
+                        df[species[b]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
                 * velem
                 * vedge
             )
-            biomasstime[:, yin + 1 : yout, i] = (
+        biomasstime[:, yin + 1 : yout, i] = (
                 np.sum(
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
+                    df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
                     * (velem ** 2),
                     axis=-1,
                 )
                 + (
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
-                    + df[biomassvars[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
+                    df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem
+                    + df[species[b]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem
                 )
                 * velem
                 * vedge
             )
-            bioconctime[:, yin, i] = (
+        bioconctime[:, yin, i] = (
                 (
-                    df[biomassvars[i] - 3, 1:, yin, xleft] * satiledg
-                    + df[vars[i] - 3, 1:, yin, xright] * satiredg
+                    df[species[b]['TecIndex'], 1:, yin, xleft] * satiledg
+                    + df[species[b]['TecIndex'], 1:, yin, xright] * satiredg
                 )
                 * (vedge ** 2)
                 + np.sum(
-                    df[biomassvars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem,
+                    df[species[b]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
                     axis=-1,
                 )
                 * velem
                 * vedge
             ) / (vbc * vedge)
-            bioconctime[:, yout, i] = (
+        bioconctime[:, yout, i] = (
                 (
-                    df[biomassvars[i] - 3, 1:, yout, xleft] * satoledg
-                    + df[vars[i] - 3, 1:, yout, xright] * satoredg
+                    df[species[b]['TecIndex'], 1:, yout, xleft] * satoledg
+                    + df[species[b]['TecIndex'], 1:, yout, xright] * satoredg
                 )
                 * (vedge ** 2)
                 + (
                     np.sum(
-                        df[biomassvars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
+                        df[species[b]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
                 * velem
                 * vedge
             ) / (vbc * vedge)
-            bioconctime[:, yin + 1 : yout, i] = (
+        bioconctime[:, yin + 1 : yout, i] = (
                 np.sum(
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
+                    df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
                     * (velem ** 2),
                     axis=-1,
                 )
                 + (
-                    df[biomassvars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
-                    + df[biomassvars[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
+                    df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem
+                    + df[species[b]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem
                 )
                 * velem
                 * vedge
             ) / (vbc * velem)
-    return df, biomassendtime, biomasstime, bioconctime
+    return biomasstime, bioconctime
 
 
 def boxV_Afluxtime(dataset1, dataset2, dataset3, chemseries, imgsize):
@@ -2107,86 +1984,6 @@ def calcsum_temp(
         )
 
     return sumalltime
-
-
-def autocorrelation(
-    directory,
-    timevari,
-    triali,
-    Trial,
-    Het,
-    Anis,
-    gw,
-    fpre,
-    fsuf,
-    yin,
-    yout,
-    xleft,
-    xright,
-    vars,
-    gvarnames,
-    AFbiomassvars,
-    AFbiomassgvarnames,
-):
-    df0, massendtime0, masstime0, conctime0, Velocity0, Headinlettime0 = calcconcmasstime(
-        triali,
-        Het[Trial.index(triali)],
-        Anis[Trial.index(triali)],
-        gw,
-        directory + timevari,
-        fpre,
-        fsuf,
-        yin,
-        yout,
-        xleft,
-        xright,
-        vars,
-        gvarnames,
-    )
-    sumall0 = calcsum_temp(
-        triali,
-        Het[Trial.index(triali)],
-        Anis[Trial.index(triali)],
-        gw,
-        directory + timevari,
-        fpre,
-        fsuf,
-        yin,
-        yout,
-        xleft,
-        xright,
-        AFbiomassvars,
-        AFbiomassgvarnames,
-    )
-    normavgconcout = np.zeros([np.shape(df0)[1], len(gvarnames)])
-    normsum = np.zeros([np.shape(df0)[1] - 1, len(AFbiomassgvarnames)])
-    spratio = np.zeros([np.shape(df0)[1] - 1, len(AFbiomassgvarnames)])
-    normspratio = np.zeros([np.shape(df0)[1] - 1, len(AFbiomassgvarnames)])
-    corrchem = np.zeros([2 * np.shape(Headinlettime0)[0], (len(gvarnames))])
-    corrbiomass = np.zeros(
-        [2 * np.shape(Headinlettime0)[0] - 1, (len(AFbiomassgvarnames))]
-    )
-    for k in range(len(gvarnames)):
-        normavgconcout[:, k] = conctime0[:, yout, k] - np.mean(conctime0[:, yout, k])
-        normheadin = Headinlettime0 - np.mean(Headinlettime0)
-        for k in range(len(gvarnames)):
-            corrchem[:, k] = np.correlate(normavgconcout[:, k], normheadin, "full") / (
-                (np.std(conctime0[:, yout, k]))
-                * (np.std(Headinlettime0) * np.shape(Headinlettime0)[0])
-            )
-        for k in range(len(AFbiomassgvarnames)):
-            normsum[:, k] = sumall0[:, k] - np.mean(sumall0[:, k])
-            spratio[:, k] = sumall0[:, k] / np.sum(sumall0[:, :], axis=-1)
-        for k in range(len(AFbiomassgvarnames)):
-            normspratio[:, k] = spratio[:, k] - np.mean(spratio[:, k])
-        for k in range(len(AFbiomassgvarnames)):
-            corrbiomass[:, k] = np.correlate(normspratio[:, k], normheadin, "full") / (
-                (np.std(spratio[:, k]))
-                * (np.std(Headinlettime0) * np.shape(Headinlettime0)[0])
-            )
-
-    return corrchem, corrbiomass, Headinlettime0
-
 
 def correlationanalysis(
     directory,

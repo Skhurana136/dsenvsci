@@ -30,8 +30,8 @@ Trial = list(scdict.keys())
 reginvest = Regimes
 domaininvest = list(domainodes.keys())[:1]
 
-vardict = proc.masterdissolvedspecies("Saturated")
-gvarnames = list(vardict.keys()) + ["Nitrogen", "TOC"]
+vardict = proc.mastermicrobialspecies("Saturated")
+gvarnames = list(t for t in vardict.keys() if vardict[t]["Location"]== "Immobile")
 
 row = []
 for Reg in reginvest:
@@ -47,16 +47,18 @@ for Reg in reginvest:
             for j in Trial[8:]:
                 data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
                 if t == "0":
-                    massfluxin, massfluxout = sssa.calcmassfluxnew(data, 0, -1, 0, -1, gvarnames, "Saturated")
+                    mass = sssa.calcsum(data, 0, -1, 0, -1, gvarnames, "Saturated")
                 else:
-                    massfluxin, massfluxout = sta.calcmft_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
-                delmassflux = massfluxin - massfluxout
-                reldelmassflux = 100*delmassflux/massfluxin
-                normmassflux = massfluxout/massfluxin
-                for g in gvarnames:
-                    row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, delmassflux[gvarnames.index(g)], reldelmassflux[gvarnames.index(g)], normmassflux[gvarnames.index(g)]])
+                    mass = np.mean(sta.calcmass_temp(data, 0, -1, 0, -1, gvarnames, "Saturated"))
+                summass = sum(mass)
+                masscontribution = mass/summass
+                for g in gvarnames + ["Total"]:
+                    if g == "Total":
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, summass, 1])
+                    else:
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, mass[gvarnames.index(g)], masscontribution[gvarnames.index(g)]])
 
-massfluxdata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "delmassflux", "reldelmassflux", "normmassflux"])
+massdata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Mass", "Contribution"])
 
 #Load tracer data
 path_tr_data = "Z:/tracer_combined_05032020.csv"
@@ -64,6 +66,6 @@ tr_data = pd.read_csv(path_tr_data, sep = "\t")
 tr_data.columns
 
 #Merge the datasets and save
-cdata = pd.merge(massfluxdata, tr_data[["Trial", "Regime", "Time", "fraction"]], on = ["Regime", "Trial"])
+cdata = pd.merge(massdata, tr_data[["Trial", "Regime", "Time", "fraction"]], on = ["Regime", "Trial"])
 
-cdata.to_csv("//msg-filer2/scratch_60_days/khurana/massflux_Original_complete.csv", sep = "\t")
+cdata.to_csv("//msg-filer2/scratch_60_days/khurana/biomass_Original_complete.csv", sep = "\t")
