@@ -47,16 +47,18 @@ for Reg in reginvest:
             for j in Trial[8:]:
                 data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
                 if t == "0":
-                    mass = sssa.calcsum(data, 0, -1, 0, -1, gvarnames, "Saturated")
+                    meanmass = sssa.calcsum(data, 0, -1, 0, -1, gvarnames, "Saturated")
                 else:
-                    mass = np.mean(sta.calcmass_temp(data, 0, -1, 0, -1, gvarnames, "Saturated"))
-                summass = sum(mass)
-                masscontribution = mass/summass
+                    mass = sta.calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
+#                    mass = sta.biomasstimefunc(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
+                    meanmass = np.mean(mass, axis = 0)
+                summass = sum(meanmass)
+                masscontribution = meanmass/summass
                 for g in gvarnames + ["Total"]:
                     if g == "Total":
                         row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, summass, 1])
                     else:
-                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, mass[gvarnames.index(g)], masscontribution[gvarnames.index(g)]])
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, meanmass[gvarnames.index(g)], masscontribution[gvarnames.index(g)]])
 
 massdata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Mass", "Contribution"])
 

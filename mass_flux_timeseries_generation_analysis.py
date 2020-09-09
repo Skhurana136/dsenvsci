@@ -84,6 +84,7 @@ for Reg in reginvest:
                 if ((j == '52' and t == "5") or (j == '43' and t == "1")):
                     pass
                 else:
+                    data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
                     acfchem, Headinlettime = sta.correlation(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
                     for g in gvarnames:
                         k = gvarnames.index(g)

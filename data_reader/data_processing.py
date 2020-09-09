@@ -282,41 +282,19 @@ def masterrates(scenariotype):
     
     return masterrates
 
-def masterdissolvedspecies(regime):
+def speciesdict(regime):
     #keys in this master dictionary refer to dissolved chemical species names
     #Var refers to the variable name used to reference in Tecplot files
     #TecIndex refers to the index in the array/tecplot output column for the data of that chemical species
     
     if regime == "Unsaturated":
         mastervariabledict = {
-                'DOC': {"Var": "doc1", "TecIndex": 10 - 3, "Graphname" : 'DOC'},
-                'DO': {"Var": "dox1", "TecIndex": 11 - 3, "Graphname" : 'DO'},
-                'Ammonium': {"Var": "Amm1", "TecIndex": 12 - 3, "Graphname" : 'Ammonium'},
-                'Nitrate': {"Var": "nitra1", "TecIndex": 17 - 3, "Graphname" : 'Nitrate'},
-                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 3, "Graphname" : 'Sulphate'},
+                'DOC': {"Var": "doc1", "TecIndex": 10 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'DOC'},
+                'DO': {"Var": "dox1", "TecIndex": 11 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'DO'},
+                'Ammonium': {"Var": "Amm1", "TecIndex": 12 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Ammonium'},
+                'Nitrate': {"Var": "nitra1", "TecIndex": 17 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Nitrate'},
+                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 3, "State" : "Solid", "Location" : "Mobile", "Graphname" : 'Sulphate'},
                 'Particulate organic matter': {"Var": "POM1", "TecIndex": 30 - 3, "Graphname" : 'Particulate organic matter'},
-                }
-    elif regime == "Saturated":
-        mastervariabledict = {
-                'DOC': {"Var": "doc1", "TecIndex": 10 - 4, "Graphname" : 'DOC'},
-                'DO': {"Var": "dox1", "TecIndex": 11 - 4, "Graphname" : 'DO'},
-                'Ammonium': {"Var": "Amm1", "TecIndex": 12 - 4, "Graphname" : 'Ammonium'},
-                'Nitrate': {"Var": "nitra1", "TecIndex": 17 - 4, "Graphname" : 'Nitrate'},
-                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 4, "Graphname" : 'Sulphate'},
-                'Particulate organic matter': {"Var": "POM1", "TecIndex": 30 - 4, "Graphname" : 'Particulate organic matter'},
-                }
-    
-    return mastervariabledict
-
-def mastermicrobialspecies(regime):
-    #keys in this master dictionary refer to microbial species names
-    #Var refers to the variable name used to reference in Tecplot files
-    #TecIndex refers to the index in the array/tecplot output column for the data of that chemical species
-    #State refers to the level of activity
-    #Location refers to if the microbial species is mobile or immobile on the matrix
-    #Graphname refers to graph output names
-    if regime == "Unsaturated":
-        mastermicrobesdict = {
                 'Immobile active aerobic degraders': {"Var": "Bfo1", "TecIndex": 8 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Aerobic degraders'},
                 'Immobile active nitrate reducers': {"Var": "Bfn1", "TecIndex": 15 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Nitrate reducers'},
                 'Immobile active sulphate reducers': {"Var": "Bfs1", "TecIndex": 20 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Sulphate reducers'},
@@ -335,7 +313,13 @@ def mastermicrobialspecies(regime):
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
                 }
     elif regime == "Saturated":
-        mastermicrobesdict = {
+        mastervariabledict = {
+                'DOC': {"Var": "doc1", "TecIndex": 10 - 4, "State" : "Dissolved", "Location" : "Mobile","Graphname" : 'DOC'},
+                'DO': {"Var": "dox1", "TecIndex": 11 - 4, "State" : "Dissolved", "Location" : "Mobile","Graphname" : 'DO'},
+                'Ammonium': {"Var": "Amm1", "TecIndex": 12 - 4, "State" : "Dissolved", "Location" : "Mobile","Graphname" : 'Ammonium'},
+                'Nitrate': {"Var": "nitra1", "TecIndex": 17 - 4, "State" : "Dissolved", "Location" : "Mobile","Graphname" : 'Nitrate'},
+                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 4, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Sulphate'},
+                'Particulate organic matter': {"Var": "POM1", "TecIndex": 30 - 4, "State" : "Solid", "Location" : "Mobile", "Graphname" : 'Particulate organic matter'},
                 'Immobile active aerobic degraders': {"Var": "Bfo1", "TecIndex": 8 - 4, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Aerobic degraders'},
                 'Immobile active nitrate reducers': {"Var": "Bfn1", "TecIndex": 15 - 4, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Nitrate reducers'},
                 'Immobile active sulphate reducers': {"Var": "Bfs1", "TecIndex": 20 - 4, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Sulphate reducers'},
@@ -352,6 +336,7 @@ def mastermicrobialspecies(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
+                
                 }
     
-    return mastermicrobesdict
+    return mastervariabledict

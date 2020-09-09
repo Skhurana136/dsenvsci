@@ -31,7 +31,7 @@ Trial = list(scdict.keys())
 reginvest = Regimes
 domaininvest = list(domainodes.keys())[:1]
 
-vardict = proc.mastermicrobialspecies("Saturated")
+vardict = proc.speciesdict("Saturated")
 gvarnames = list(t for t in vardict.keys() if vardict[t]["Location"]== "Immobile")
 
 #Sensitivity
@@ -57,13 +57,13 @@ for Reg in reginvest:
 
 sensitivitydata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Sensitivity"])
 
-tracerdata = pd.read_csv("tracer_combined_05032020.csv", sep = "\t")
+tracerdata = pd.read_csv("Z:/tracer_combined_05032020.csv", sep = "\t")
 
 ampbth = pd.merge(sensitivitydata, tracerdata[["Trial", "Regime", "fraction", "Time"]], on=["Trial", "Regime"])
 
 ampbth["Sensitivity%"] = ampbth["Sensitivity"] * 100
 
-ampbth.to_csv("Z:/Saturated_flow/diffusion_transient/Normalized_RMSamplitude_biomass.csv", sep="\t")
+ampbth.to_csv("Z:/Normalized_RMSamplitude_biomass.csv", sep="\t")
 
 #Cross-correlation
 
@@ -84,6 +84,7 @@ for Reg in reginvest:
                 if ((j == '52' and t == "5") or (j == '43' and t == "1")):
                     pass
                 else:
+                    data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
                     acfchem, Headinlettime = sta.mass_correlation(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
                     for g in gvarnames:
                         k = gvarnames.index(g)
@@ -91,7 +92,7 @@ for Reg in reginvest:
                         ychem = acfchem[np.shape(Headinlettime)[0] - 1 + maxchem :, k]
                         memorychem = np.where((ychem <= criteria))[0][0]
                         val = acfchem[np.shape(Headinlettime)[0] - 1 + maxchem, k]
-                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, maxchem*datafreq, memorychem[0][0]*datafreq, val])
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, maxchem*datafreq, memorychem*datafreq, val])
 
 Ampchem = pd.DataFrame.from_records(row,
     columns=[
@@ -106,6 +107,7 @@ Ampchem = pd.DataFrame.from_records(row,
         "Memory",
         "Crosscorrelation"])
 
-bth1, bth = proc.tracerstudies()
-dfall2 = pd.merge(Ampchem, bth[["Trial", "Regime", "fraction", "Time"]], on=["Trial", "Regime"])
-dfall2.to_csv("Z:/Saturated_flow/diffusion_transient/crosschor_memory_biomass.csv", sep="\t")
+tracerdata = pd.read_csv("Z:/tracer_combined_05032020.csv", sep = "\t")
+
+dfall2 = pd.merge(Ampchem, tracerdata[["Trial", "Regime", "fraction", "Time"]], on=["Trial", "Regime"])
+dfall2.to_csv("Z:/crosschor_memory_biomass.csv", sep="\t")

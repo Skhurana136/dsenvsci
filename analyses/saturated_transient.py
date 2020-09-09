@@ -7,16 +7,12 @@ Created on Fri Apr 10 16:56:16 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 from scipy import signal
 
 def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     import data_reader.data_processing as proc
-    reactivespecies = proc.masterdissolvedspecies(flowregime)
-    microbialspecies = proc.mastermicrobialspecies(flowregime)
-    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
-    species = {**reactivespecies, **microbialspecies}
+    species = proc.speciesdict(flowregime)
+    mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
 
     vedge = 0.005
     velem = 0.01
@@ -56,7 +52,7 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
     for i in gvarnames:
         idx = gvarnames.index(i)
         if i == "Nitrogen":
-           Nspecies = mobilespecies + ["Particulate organic matter"]
+           Nspecies = mobilespecies
            ninlet = 0
            noutlet = 0
            for n in Nspecies:
@@ -92,10 +88,10 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
            sumout = 0
            for r in ["Ammonium", "Nitrate"]:
                sumin = sumin + (
-                   df[reactivespecies[r]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
-                   + df[reactivespecies[r]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                   df[species[r]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
+                   + df[species[r]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
                    + np.sum(
-                       df[reactivespecies[r]['TecIndex'], 1:, yin, xleft + 1 : xright]
+                       df[species[r]['TecIndex'], 1:, yin, xleft + 1 : xright]
                        * satielem
                        * velielem
                        * velem,
@@ -106,10 +102,10 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
                    + np.sum(velem * velielem, axis=-1)
                )
                sumout = sumout + (
-                   df[reactivespecies[r]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
-                   + df[reactivespecies[r]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                   df[species[r]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
+                   + df[species[r]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
                    + np.sum(
-                       df[reactivespecies[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                       df[species[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
                        * satoelem
                        * veloelem
                        * velem,
@@ -124,7 +120,7 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
         elif i == "TOC":
            cinlet = 0
            coutlet = 0
-           for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+           for c in list(mobilespecies + ["DOC"]):
                cinlet = cinlet + (
                        df[species[c]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
                        + df[species[c]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
@@ -227,10 +223,10 @@ def mass_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarn
     mass_amplitude = np. zeros([len(gvarnames)])
     normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     
-    masstime, conctime = biomasstimefunc (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    masstime = calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
     
     for g in gvarnames:
-        normavgmass[:, gvarnames.index(g)] = masstime[:, yout, gvarnames.index(g)] / np.mean(masstime[:, yout, gvarnames.index(g)])
+        normavgmass[:, gvarnames.index(g)] = masstime[:, gvarnames.index(g)] / np.mean(masstime[:, gvarnames.index(g)])
     
     for g in gvarnames:
         f, Pxx_spec = signal.periodogram(normavgmass[:, gvarnames.index(g)], scaling="spectrum")
@@ -258,18 +254,18 @@ def correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,f
 
 def mass_correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     data = numpyarray
-    masstime, conctime = biomasstimefunc (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    masstime = calcsum_temp (data,yin,yout,xleft,xright, gvarnames,flowregime)
     conctime, TotalFlow, Headinlettime0 = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
-    corrchem = np.zeros([2 * np.shape(Headinlettime0)[0], (len(gvarnames))])
-    normavgmass = np.zeros([np.shape(data)[1], len(gvarnames)])
+    corrchem = np.zeros([2 * np.shape(Headinlettime0)[0]-1, (len(gvarnames))])
+    normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     
     for g in gvarnames:
         k = gvarnames.index(g)
-        normavgmass[:, k] = masstime[:, yout, k] - np.mean(masstime[:, yout, k])
+        normavgmass[:, k] = masstime[:, k] - np.mean(masstime[:, k])
         normheadin = Headinlettime0 - np.mean(Headinlettime0)
         for k in range(len(gvarnames)):
             corrchem[:, k] = np.correlate(normavgmass[:, k], normheadin, "full") / (
-                (np.std(masstime[:, yout, k]))
+                (np.std(masstime[:, k]))
                 * (np.std(Headinlettime0) * np.shape(Headinlettime0)[0])
             )
 
@@ -278,10 +274,8 @@ def mass_correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarna
 #def calcmft_temp(Tforfpre, Trial, gvarnames, d, yin, yout, xleft, xright, fpre, fsuf, Het, Anis):
 def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):            
     import data_reader.data_processing as proc
-    reactivespecies = proc.masterdissolvedspecies(flowregime)
-    microbialspecies = proc.mastermicrobialspecies(flowregime)
-    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
-    species = {**reactivespecies, **microbialspecies}
+    species = proc.speciesdict(flowregime)
+    mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
 
     vedge = 0.005
     velem = 0.01
@@ -322,10 +316,9 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
     for i in gvarnames:
         idx = gvarnames.index(i)
         if i == "Nitrogen":
-            Nspecies = mobilespecies + ["Particulate organic matter"]
             ninlet = 0
             noutlet = 0
-            for n in Nspecies:
+            for n in mobilespecies:
                 ninlet = (
                         ninlet
                         + (sum(df[species[n]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
@@ -340,14 +333,14 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
             sumout = 0
             for r in ["Ammonium", "Nitrate"]:                            
                 rin = (
-                        sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
-                + sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
-                + sum(np.sum(df[reactivespecies[r]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por
+                        sum(df[species[r]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
+                + sum(df[species[r]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
+                + sum(np.sum(df[species[r]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por
                 rout = (
-                        sum(df[reactivespecies[r]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
-                + sum(df[reactivespecies[r]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
+                        sum(df[species[r]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
+                + sum(df[species[r]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
                 + sum(                            np.sum(
-                        df[reactivespecies[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
+                        df[species[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
                         * velem,
@@ -361,7 +354,7 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
         elif i == "TOC":
             cinlet = 0
             coutlet = 0
-            for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+            for c in list(mobilespecies + ["DOC"]):
                 cinlet = (
                         cinlet
                         + (
@@ -1254,15 +1247,15 @@ def calcconcmasstimeX(
     return df, massendtime, masstime, conctime, np.mean(Velocity)
 
 
-def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, biomassvargnames, flowregime):
+def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
     import data_reader.data_processing as proc
     vedge = 0.005
     velem = 0.01
     vbc = 0.3
     df = numpyarray
-    biomasstime = np.zeros([np.shape(df)[1]-1, nodesinydirection,  len(biomassvargnames)])
-    bioconctime = np.zeros([np.shape(df)[1]-1, nodesinydirection, len(biomassvargnames)])
-    species = proc.mastermicrobialspecies("Saturated")
+    biomasstime = np.zeros([np.shape(df)[1]-1, nodesinydirection,  len(gvarnames)])
+    bioconctime = np.zeros([np.shape(df)[1]-1, nodesinydirection, len(gvarnames)])
+    species = proc.speciesdict(flowregime)
     
     if flowregime == "Saturated":
         satielem = 1
@@ -1284,8 +1277,8 @@ def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, bio
         satoledg = df[4, 1:, yout, xleft]
         satoredg = df[4, 1:, yout, xright]
         satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-    for b in biomassvargnames:
-        i = biomassvargnames.index(b)
+    for b in gvarnames:
+        i = gvarnames.index(b)
         biomasstime[:, yin, i] = (
                 (
                     df[species[b]['TecIndex'], 1:, yin, xleft] * satiledg
@@ -1375,551 +1368,15 @@ def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, bio
     return biomasstime, bioconctime
 
 
-def boxV_Afluxtime(dataset1, dataset2, dataset3, chemseries, imgsize):
-    legendsize = 14
-    axissize = 14
-    ticksize = 12
-    titlesize = 15
-    dfall = pd.concat([dataset2, dataset3], axis=0, ignore_index=True)
-    l = []
-    for i in range(len(dfall)):
-        l.append(str(dfall["Variance"][i]) + ":" + str(dfall["Anisotropy"][i]))
-
-    dfall["Xlabels"] = l
-    dfall = dfall.sort_values(by=["Variance", "Anisotropy"])
-    Regimes = ["Slow", "Medium"]
-    dfall["del2massflux_Time%"] = dfall["del2massflux_Time"] * 100
-    Chems = chemseries
-    colseries = ["Reds", "Greens", "Blues"]
-    ncols = len(Regimes)
-    nrows = len(Chems)
-    fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=imgsize)
-    plt.suptitle(
-        "Change in removal of carbon and nitrogen in transient conditions",
-        fontsize=titlesize,
-    )
-    for i in Regimes:
-        dfall0 = dfall[dfall["Time"] != 0]
-        df = dfall[dfall["Regime"] == i]
-        col = 0
-        for k in Chems:
-            dfc = df[df["Chem"] == k]
-            colidx1 = Chems.index(k)
-            colidx2 = Regimes.index(i)
-            dum = sns.boxplot(
-                x="Xlabels",
-                y="del2massflux%",
-                hue="Time",
-                palette=colseries[Regimes.index(i)],
-                data=dfc,
-                ax=axes[colidx1][colidx2],
-            )
-            axes.flat[Chems.index(k)].set_ylabel(k, fontsize=axissize)
-            axes.flat[Chems.index(k)].legend_.remove()
-            axes.flat[Chems.index(k)].tick_params(labelsize=ticksize)
-            if k != "Nitrate reducers":
-                axes.flat[Chems.index(k)].set_xlabel("")
-                axes.flat[Chems.index(k)].set_xticklabels([])
-            else:
-                axes.flat[Chems.index(k)].set_xlabel(
-                    "Variance : Anisotropy", fontsize=axissize
-                )
-            col = col + 1
-            axes[colidx1][colidx2].set_xlabel("")
-            axes[colidx1][colidx2].set_ylabel("")
-            col = col + 1
-    for ax, col in zip(axes[0], Regimes):
-        ax.set_title(col, fontsize=axissize)
-    for ax in axes[:, 0]:
-        ax.set_ylabel("Relative difference (%)", fontsize=axissize)
-    for ax, row in zip(axes[:, 1], Chems):
-        ax.annotate(
-            row,
-            xy=(0, 0.5),
-            xytext=(-ax.yaxis.labelpad + 450, 0),
-            xycoords="axes fraction",
-            textcoords="offset points",
-            size="large",
-            ha="left",
-            va="center",
-        )
-    for ax in axes[4]:
-        ax.set_xlabel("Variance : Anisotropy", fontsize=axissize)
-    fig.subplots_adjust(left=0.15, top=0.9)
-
-    return fig
-
-
-def boxV_Abiotime(dataset1, dataset2, dataset3, imgsize):
-    legendsize = 14
-    axissize = 14
-    ticksize = 12
-    titlesize = 15
-    dfall = pd.concat([dataset2, dataset3], axis=0, ignore_index=True)
-    #    dfall = pd.concat([equalbc, slowbc, fastbc], axis = 0, ignore_index=True)
-    l = []
-    for i in range(len(dfall)):
-        l.append(str(dfall["Variance_b"][i]) + ":" + str(dfall["Anisotropy_b"][i]))
-
-    dfall["Xlabels"] = l
-    dfall = dfall.sort_values(by=["Variance_b", "Anisotropy_b"])
-    dfall["delbiomass%"] = dfall["Change_umoles"] * 100
-    Regimes = ["Slow", "Medium", "Fast"]
-    Chems = ["Aerobes", "Ammonia oxidizers", "Nitrate reducers"]
-    colseries = ["Reds", "Greens", "Blues"]
-    ncols = len(Regimes)
-    nrows = len(Chems)
-    fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=imgsize)
-    plt.suptitle("Change in total biomass at steady state")
-    for i in Regimes:
-        dfall0 = dfall[dfall["Time_b"] != 0]
-        df = dfall[dfall["Regime"] == i]
-        col = 0
-        for k in Chems:
-            dfc = df[df["Chemb"] == k]
-            colidx1 = Chems.index(k)
-            colidx2 = Regimes.index(i)
-            dum = sns.boxplot(
-                x="Xlabels",
-                y="delbiomass%",
-                hue="Time_b",
-                palette=colseries[Regimes.index(i)],
-                data=dfc,
-                ax=axes[colidx1][colidx2],
-            )
-            axes[colidx1][colidx2].set_xlabel("")
-            axes[colidx1][colidx2].set_ylabel("")
-            col = col + 1
-    for ax, col in zip(axes[0], Regimes):
-        ax.set_title(col)
-    for ax in axes[:, 0]:
-        ax.set_ylabel("Relative difference (%)")
-    for ax, row in zip(axes[:, 1], Chems):
-        ax.annotate(
-            row,
-            xy=(0, 0.5),
-            xytext=(-ax.yaxis.labelpad + 450, 0),
-            xycoords="axes fraction",
-            textcoords="offset points",
-            size="large",
-            ha="left",
-            va="center",
-        )
-    for ax in axes[2]:
-        ax.set_xlabel("Variance : Anisotropy")
-    fig.subplots_adjust(left=0.15, top=0.9)
-
-    return fig
-
-
-def scatterrestime_biomass_temp(
-    dataset1, dataset2, dataset3, chemseries, plotYaxis, plotYaxislabel
-):
-    legendsize = 14
-    axissize = 14
-    ticksize = 12
-    titlesize = 15
-    dfall = pd.concat([dataset2, dataset3], axis=0, ignore_index=True, sort=False)
-    l = []
-    for i in range(len(dfall)):
-        l.append(str(dfall["Variance"][i]) + ":" + str(dfall["Anisotropy"][i]))
-
-    dfall["Xlabels"] = l
-    dfall = dfall.sort_values(by=["Variance", "Anisotropy"])
-    #    dfall["delbiomass%"] = dfall["Change_umoles"]*100
-    #    dfall["delbiomass_Time%"] = dfall["Change_umoles_Time"]*100
-    Regimes = ["Slow", "Medium", "Fast"]
-    Chems = ["Aerobes", "Ammonia oxidizers", "Nitrate reducers"]
-
-    bth1, bth = tracerstudies()
-
-    dfall2 = pd.merge(
-        dfall, bth[["Trial", "Regime", "fraction"]], on=["Trial", "Regime"]
-    )
-    xlabels = np.arange(
-        round(min(np.unique(dfall2["fraction"])), 1),
-        round(max(np.unique(dfall2["fraction"])), 1) + 0.2,
-        0.2,
-    )
-    #    Chems = ["Aerobes", "Ammonia oxidizers", "Nitrate reducers"]
-    colseries = ["Reds", "Greens", "Blues"]
-    #    markerstyles = ["o", "d","^", "s"]
-    ncols = len(Regimes)
-    nrows = len(Chems)
-    Regimes = ["Slow", "Medium", "Fast"]
-    Chems = chemseries
-    species = ["Aerobes", "Ammonia oxidizers", "Nitrate reducers"]
-    position = ["Immobilized", "Mobile"]
-    activity = ["Active", "Inactive"]
-    ncols = len(species)
-    nrows = len(position) + len(activity)
-    fig, axes = plt.subplots(
-        nrows=nrows, ncols=ncols, figsize=[len(Chems) * 1.5, len(Chems) * 1.5]
-    )
-    # plt.suptitle("Change in total biomass with respect to homogeneous scenario at steady state", fontsize = 20)
-    for k in Chems:
-        dfc = dfall2[dfall2["Chem"] == k]
-        colidx1 = Chems.index(k)
-        for i in Regimes:
-            dfctemp = dfc
-            dfcr = dfctemp[dfctemp["Regime"] == i]
-            print(i)
-            axes.flat[colidx1].scatter(
-                "fraction",
-                plotYaxis,
-                c="Time",
-                cmap=colseries[Regimes.index(i)],
-                data=dfcr,
-                label="Time",
-            )
-            #        axes.flat[colidx1].plot(pred, slope + intercept*pred, '--')
-            #        axes.flat[colidx1].set_ylabel(k, fontsize = 15)
-            axes.flat[colidx1].tick_params(axis="y", labelsize=15)
-            #        axes.flat[colidx1].set_xscale('log')
-            if Chems.index(k) < len(Chems) - 3:
-                axes.flat[colidx1].set_xlabel("")
-                axes.flat[colidx1].set_xticklabels([])
-            else:
-                axes.flat[colidx1].tick_params(axis="x", labelsize=15)
-    #            axes.flat[colidx1].set_xlabel('Fraction of breakthrough time in base case', fontsize = 15)
-    plt.legend(loc="best", fontsize=12)
-    for ax, typsp in zip(axes[0, :], species):
-        ax.set_title(typsp, fontsize=15)
-    axes[0, -1].annotate(
-        position[0],
-        xy=(0, 0.5),
-        xytext=(300, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-    axes[1, -1].annotate(
-        position[0],
-        xy=(0, 0.5),
-        xytext=(300, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-    axes[2, -1].annotate(
-        position[1],
-        xy=(0, 0.5),
-        xytext=(300, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-    axes[3, -1].annotate(
-        position[1],
-        xy=(0, 0.5),
-        xytext=(300, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-    axes[0, 0].set_ylabel(activity[0], fontsize=15)
-    axes[1, 0].set_ylabel(activity[1], fontsize=15)
-    axes[2, 0].set_ylabel(activity[0], fontsize=15)
-    axes[3, 0].set_ylabel(activity[1], fontsize=15)
-    plt.annotate(
-        plotYaxislabel,
-        xy=(0, 2.2),
-        xytext=(-800, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-    plt.annotate(
-        "Fraction of breakthrough time in base case",
-        xy=(-0.4, -0.3),
-        xytext=(-100, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="center",
-        va="center",
-        fontsize=15,
-    )
-
-    #    fig, axes = plt.subplots(ncols = ncols, nrows = nrows, figsize = [15,10]), sharex='col')
-    #    plt.suptitle("Change in total biomass in transient conditions", fontsize = titlesize)
-    #    for i in Regimes:
-    #        dfall0 = dfall2[dfall2['Time_b']!=0]
-    #        df = dfall2[dfall2['Regime']==i]
-    #        col = 0
-    ##        for t in range(4):
-    #            dft = df[df['Time']==t]
-    #            m = markerstyles[t]
-    #            for k in Chems:
-    #                dfc = df[df['Chemb']==k]
-    #                colidx1 = Chems.index(k)
-    ##                colidx2 = Regimes.index(i)
-    #                axes[colidx1][colidx2].scatter("fraction", plotYaxis, c = "Time", cmap = colseries[Regimes.index(i)], data = dfc)
-    #                    facecolors = 'none', edgecolors = colseries[Regimes.index(i)])
-    #                axes[colidx1][colidx2].set_xlabel('')
-    #                axes[colidx1][colidx2].set_ylabel('')
-    #                axes[colidx1][colidx2].set_xticks(np.arange(round(min(np.unique(dfall2['%ofhomogeneous'])),-1), round(max(np.unique(dfall2['%ofhomogeneous'])),-1), 10.0))
-    #                axes[colidx1][colidx2].set_xticklabels([])
-    #                axes[colidx1][colidx2].set_xticklabels([20, 0, -20, -40, -60, -80])
-    ##                col = col+1
-    #    for ax, col in zip(axes[0], Regimes):
-    #        ax.set_title(col, fontsize = axissize)
-    ##    for ax in axes[:,0]:
-    ##        ax.set_ylabel("Relative difference (%)")
-    #    for ax, row in zip(axes[:,2], Chems):
-    #        ax.annotate(row, xy = (0, 0.5), xytext = (-ax.yaxis.labelpad + 250,0), xycoords = 'axes fraction', textcoords='offset points', ha = 'left', va = 'center', rotation = 'vertical',  fontsize = 15)
-    #    for ax in axes[-1]:
-    ##        ax.set_xlabel("Relative difference in breakthrough time (%)")
-    #        ax.set_xticklabels(np.arange(round(min(np.unique(dfall2['%ofhomogeneous'])),-1), round(max(np.unique(dfall2['%ofhomogeneous'])),-1), 10), size = ticksize)
-    #    plt.figtext(0.5, 0.08, 'Relative difference in breakthrough time (%)', ha='center', va='center', fontsize = axissize)
-    #    plt.figtext(0.08, 0.5, plotYaxislabel, ha='center', va='center', rotation='vertical', fontsize = axissize)
-    #    fig.subplots_adjust(left=0.15, top=0.9)
-    #
-    return fig
-
-
-def scatterrestime_flux_temp_singleaxis(
-    dataset1, dataset2, dataset3, chemseries, plotYaxis, plotYaxislabel
-):
-    legendsize = 14
-    axissize = 14
-    ticksize = 12
-    titlesize = 15
-    dfall = pd.concat([dataset2, dataset3], axis=0, ignore_index=True)
-    l = []
-    for i in range(len(dfall)):
-        l.append(str(dfall["Variance"][i]) + ":" + str(dfall["Anisotropy"][i]))
-
-    dfall["Xlabels"] = l
-    dfall = dfall.sort_values(by=["Variance", "Anisotropy"])
-    bth1, bth = tracerstudies()
-
-    dfall2 = pd.merge(
-        dfall, bth[["Trial", "Regime", "fraction"]], on=["Trial", "Regime"]
-    )
-
-    Regimes = ["Slow", "Medium", "Fast"]
-
-    #    dfall2["del2massflux_Time%"] = dfall2["del2massflux_Time"]*100
-    Chems = chemseries
-    #    colseries = ["indianred", "g", "steelblue"]
-    colseries = ["Reds", "Greens", "Blues"]
-    markerstyles = ["o", "d", "^", "s"]
-    ncols = len(Regimes)
-    nrows = len(Chems)
-    xlabels = np.arange(
-        round(min(np.unique(dfall2["fraction"])), 1),
-        round(max(np.unique(dfall2["fraction"])), 1) + 0.2,
-        0.2,
-    )
-    print(xlabels)
-    fig, axes = plt.subplots(ncols=1, nrows=nrows, figsize=[8, 5])  # , sharex = True)
-    plt.suptitle(
-        "Change in removal of carbon and nitrogen in transient conditions",
-        fontsize=titlesize,
-    )
-    for i in Regimes:
-        #        dfall0 = dfall2[dfall2['Time_b']!=0]
-        df = dfall2[dfall2["Regime"] == i]
-        col = 0
-        for t in range(4):
-            dft = df[df["Time"] == t]
-            m = markerstyles[t]
-            for k in Chems:
-                dfc = df[df["Chem"] == k]
-                colidx1 = Chems.index(k)
-                colidx2 = Regimes.index(i)
-                axes[colidx1].scatter(
-                    "fraction",
-                    plotYaxis,
-                    c="Time",
-                    cmap=colseries[Regimes.index(i)],
-                    data=dfc,
-                )
-                #    facecolors = 'none', edgecolors = colseries[Regimes.index(i)])
-                axes[colidx1].set_xlabel("")
-                axes[colidx1].set_ylabel("")
-                axes[colidx1].set_xticks(xlabels)
-                if k != Chems[-1]:
-                    axes[colidx1].set_xticklabels([])
-                else:
-                    axes.flat[colidx1].tick_params(axis="x", labelsize=15)
-                    axes.flat[colidx1].set_xlabel(
-                        "Fraction of breakthrough time in base case", fontsize=15
-                    )
-    #    plt.legend(loc = "best", fontsize = 12)
-    plt.annotate(
-        plotYaxislabel,
-        xy=(0, 2.2),
-        xytext=(-80, 0),
-        xycoords="axes fraction",
-        textcoords="offset points",
-        size="large",
-        ha="left",
-        va="center",
-        rotation="vertical",
-        fontsize=15,
-    )
-
-    return fig
-
-
-def scatterrestime_flux_temp(
-    dataset1, dataset2, dataset3, chemseries, plotYaxis, plotYaxislabel
-):
-    legendsize = 14
-    axissize = 14
-    ticksize = 12
-    titlesize = 15
-    dfall = pd.concat([dataset2, dataset3], axis=0, ignore_index=True)
-    l = []
-    for i in range(len(dfall)):
-        l.append(str(dfall["Variance"][i]) + ":" + str(dfall["Anisotropy"][i]))
-
-    dfall["Xlabels"] = l
-    dfall = dfall.sort_values(by=["Variance", "Anisotropy"])
-    bth1, bth = tracerstudies()
-
-    dfall2 = pd.merge(
-        dfall, bth[["Trial", "Regime", "fraction"]], on=["Trial", "Regime"]
-    )
-
-    Regimes = ["Slow", "Medium", "Fast"]
-
-    #    dfall2["del2massflux_Time%"] = dfall2["del2massflux_Time"]*100
-    Chems = chemseries
-    toplot = str(plotYaxis)
-    toplotlabel = str(plotYaxislabel)
-    #    colseries = ["indianred", "g", "steelblue"]
-    colseries = ["Reds", "Greens", "Blues"]
-    markerstyles = ["o", "d", "^", "s"]
-    ncols = len(Regimes)
-    nrows = len(Chems)
-    xlabels = np.arange(
-        round(min(np.unique(dfall2["fraction"])), 1),
-        round(max(np.unique(dfall2["fraction"])), 1) + 0.2,
-        0.2,
-    )
-    print(xlabels)
-    fig, axes = plt.subplots(
-        ncols=ncols, nrows=nrows, figsize=[15, 10]
-    )  # , sharex = True)
-    plt.suptitle(
-        "Change in removal of carbon and nitrogen in transient conditions",
-        fontsize=titlesize,
-    )
-    for i in Regimes:
-        #        dfall0 = dfall2[dfall2['Time_b']!=0]
-        df = dfall2[dfall2["Regime"] == i]
-        col = 0
-        for t in range(4):
-            dft = df[df["Time"] == t]
-            m = markerstyles[t]
-            for k in Chems:
-                dfc = df[df["Chem"] == k]
-                colidx1 = Chems.index(k)
-                colidx2 = Regimes.index(i)
-                axes[colidx1][colidx2].scatter(
-                    "fraction",
-                    toplot,
-                    c="Time",
-                    cmap=colseries[Regimes.index(i)],
-                    data=dfc,
-                )
-                #    facecolors = 'none', edgecolors = colseries[Regimes.index(i)])
-                axes[colidx1][colidx2].set_xlabel("")
-                axes[colidx1][colidx2].set_ylabel("")
-                axes[colidx1][colidx2].set_xticks(xlabels)
-                if k != Chems[-1]:
-                    #                    axes[colidx1][colidx2].set_xticklabels(xlabels, size = ticksize)
-                    #                else:
-                    axes[colidx1][colidx2].set_xticklabels([])
-                col = col + 1
-    for ax, col in zip(axes[0], Regimes):
-        ax.set_title(col, fontsize=axissize)
-    #    for ax in axes[:,0]:
-    #        ax.set_ylabel("Relative difference (%)")
-    for ax, row in zip(axes[:, 2], Chems):
-        ax.annotate(
-            row,
-            xy=(0, 0.5),
-            xytext=(-ax.yaxis.labelpad + 250, 0),
-            xycoords="axes fraction",
-            textcoords="offset points",
-            ha="left",
-            va="center",
-            rotation="vertical",
-            fontsize=15,
-        )
-    #    for ax in axes[-1]:
-    #        ax.set_xticklabels(xlabels, size = ticksize)
-    plt.figtext(
-        0.5,
-        0.08,
-        "Ratio of breakthrough time with the base case",
-        ha="center",
-        va="center",
-        fontsize=axissize,
-    )
-    plt.figtext(
-        0.08,
-        0.5,
-        toplotlabel,
-        ha="center",
-        va="center",
-        rotation="vertical",
-        fontsize=axissize,
-    )
-    fig.subplots_adjust(left=0.15, top=0.9)
-
-    return fig
-
-
-def calcsum_temp(
-    Trial,
-    Het,
-    Anis,
-    gw,
-    newd,
-    fpre,
-    fsuf,
-    yin,
-    yout,
-    xleft,
-    xright,
-    biomassvars,
-    biomassgvarnames,
-):
-    yout = 50
-    yin = 0
-    xleft = 0
-    xright = 30
+def calcsum_temp(data, yin,yout,xleft,xright,gvarnames,flowregime):
+    import data_reader.data_processing as proc
+    species = proc.speciesdict(flowregime)
     vedge = 0.005
     velem = 0.01
-    vbc = 0.3
-    df = np.load(newd + fpre + str(Trial) + fsuf + fpre + str(Trial) + "_df.npy")
-    sumalltime = np.zeros([np.shape(df)[1] - 1, len(biomassvars)])
-    if gw == 1:
+
+    df = data
+    sumalltime = np.zeros([np.shape(df)[1] - 1, len(gvarnames)])
+    if flowregime == "Saturated":
         satielem = 1
         satoelem = 1
         satlelem = 1
@@ -1939,41 +1396,40 @@ def calcsum_temp(
         satlelem = df[4, 1:, yin + 1 : yout, xleft]
         satrelem = df[4, 1:, yin + 1 : yout, xright]
         satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-    for b in range(len(biomassgvarnames)):
+    for g in gvarnames:
+        b = gvarnames.index(g)
         sumalltime[:, b] = (
             (
                 (
-                    df[biomassvars[b] - 3, 1:, yin, xleft] * satiledg
-                    + df[biomassvars[b] - 3, 1:, yout, xleft] * satoledg
-                    + df[biomassvars[b] - 3, 1:, yin, xright] * satiredg
-                    + df[biomassvars[b] - 3, 1:, yout, xright] * satoredg
+                    df[species[g]['TecIndex'], 1:, yin, xleft] * satiledg
+                    + df[species[g]['TecIndex'], 1:, yout, xleft] * satoledg
+                    + df[species[g]['TecIndex'], 1:, yin, xright] * satiredg
+                    + df[species[g]['TecIndex'], 1:, yout, xright] * satoredg
                 )
-                * vedge
-                * vedge
+                * vedge**2
                 + (
                     np.sum(
-                        df[biomassvars[b] - 3, 1:, yin, xleft + 1 : xright] * satielem,
+                        df[species[g]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
                         axis=-1,
                     )
                     + np.sum(
-                        df[biomassvars[b] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
+                        df[species[g]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                     + np.sum(
-                        df[biomassvars[b] - 3, 1:, yin + 1 : yout, xleft] * satlelem,
+                        df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem,
                         axis=-1,
                     )
                     + np.sum(
-                        df[biomassvars[b] - 3, 1:, yin + 1 : yout, xright] * satrelem,
+                        df[species[g]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem,
                         axis=-1,
                     )
                 )
-                * vedge
-                * velem
+                * vedge * velem
             )
             + np.sum(
                 np.sum(
-                    df[biomassvars[b] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
+                    df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem,
                     axis=-1,
                 ),

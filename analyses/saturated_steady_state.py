@@ -9,11 +9,9 @@ from analyses.saturated_transient import calcconcmasstime
 
 def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
     import data_reader.data_processing as proc
-    reactivespecies = proc.masterdissolvedspecies(flowregime)
-    microbialspecies = proc.mastermicrobialspecies(flowregime)
-    mobilespecies = list(t for t in microbialspecies.keys() if microbialspecies[t]['Location'] == "Mobile")
-    species = {**reactivespecies, **microbialspecies}
-
+    species = proc.speciesdict(flowregime)
+    mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State']!= "Dissolved"))
+    
     vedge = 0.005
     velem = 0.01
     por = 0.2
@@ -53,7 +51,7 @@ def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime)
     for i in gvarnames:
         idx = gvarnames.index(i)
         if i == "Nitrogen":
-            Nspecies = mobilespecies + ["Particulate organic matter"]
+            Nspecies = mobilespecies
             ninlet = 0
             noutlet = 0
             for n in Nspecies:
@@ -89,14 +87,14 @@ def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime)
             sumout = 0
             for r in ["Ammonium", "Nitrate"]:                            
                 rin = (
-                        df[reactivespecies[r]['TecIndex'], -1, yin, xleft]*satiledg*veliledg*vedge
-                + df[reactivespecies[r]['TecIndex'], -1, yin, xright]*satiredg*veliredg*vedge
-                + np.sum(df[reactivespecies[r]['TecIndex'], -1, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1))/por
+                        df[species[r]['TecIndex'], -1, yin, xleft]*satiledg*veliledg*vedge
+                + df[species[r]['TecIndex'], -1, yin, xright]*satiredg*veliredg*vedge
+                + np.sum(df[species[r]['TecIndex'], -1, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1))/por
                 rout = (
-                        df[reactivespecies[r]['TecIndex'], -1, yout, xleft]*satoledg*veloledg*vedge
-                + df[reactivespecies[r]['TecIndex'], -1, yout, xright]*satoredg*veloredg*vedge
+                        df[species[r]['TecIndex'], -1, yout, xleft]*satoledg*veloledg*vedge
+                + df[species[r]['TecIndex'], -1, yout, xright]*satoredg*veloredg*vedge
                 + np.sum(
-                        df[reactivespecies[r]['TecIndex'], -1, yout, xleft + 1 : xright]
+                        df[species[r]['TecIndex'], -1, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
                         * velem,
@@ -110,7 +108,7 @@ def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime)
         elif i == "TOC":
             cinlet = 0
             coutlet = 0
-            for c in list(mobilespecies + ["DOC"] + ["Particulate organic matter"]):
+            for c in list(mobilespecies + ["DOC"]):
                 cinlet = (
                         cinlet
                         + (
@@ -445,7 +443,7 @@ def calcmassflux(
 
 def calcsum(data,yin,yout,xleft,xright,gvarnames,flowregime):
     import data_reader.data_processing as proc
-    species = proc.mastermicrobialspecies("Saturated")
+    species = proc.speciesdict(flowregime)
     vedge = 0.005
     velem = 0.01
     por = 0.2
