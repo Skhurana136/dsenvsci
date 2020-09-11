@@ -32,7 +32,8 @@ reginvest = Regimes
 domaininvest = list(domainodes.keys())[:1]
 
 vardict = proc.speciesdict("Saturated")
-gvarnames = list(t for t in vardict.keys() if vardict[t]["Location"]== "Immobile")
+States = ["Active", "Inactive"]
+gvarnames = list(t for t in vardict.keys() if vardict[t]["State"] in (States))
 
 #Sensitivity
 row = []
@@ -43,6 +44,7 @@ for Reg in reginvest:
         else:
             domadd = ""
         for t in ["1", "2", "5"]:
+#            directory = "//tsclient/D/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             directory = "D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             #directory = "X:/Saturated_flow/changedkindox_transient/" + domadd + Reg + "AR_" + t + "/"#change directory as per flow regime
             print (Reg, domain, t)
@@ -77,6 +79,7 @@ for Reg in reginvest:
         else:
             domadd = ""
         for t in ["1", "2", "5"]:
+#            directory = "//tsclient/D/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             directory = "D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             #directory = "X:/Saturated_flow/changedkindox_transient/" + domadd + Reg + "AR_" + t + "/"#change directory as per flow regime
             print (Reg, domain, t)

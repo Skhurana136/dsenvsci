@@ -31,8 +31,8 @@ Trial = list(scdict.keys())
 reginvest = Regimes
 domaininvest = list(domainodes.keys())[:1]
 
-vardict = proc.masterdissolvedspecies("Saturated")
-gvarnames = list(vardict.keys()) + ["Nitrogen", "TOC"]
+vardict = proc.speciesdict("Saturated")
+gvarnames = list(t for t in vardict.keys() if vardict[t]["Location"]=="Mobile") + ["Nitrogen", "TOC"]
 
 #Sensitivity
 row = []
@@ -42,6 +42,7 @@ for Reg in reginvest:
             domadd = domain + "_"
         else:
             domadd = ""
+        basedata = np.load("D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_0/NS-AH/NS-AH_df.npy")
         for t in ["1", "2", "5"]:
             directory = "D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             #directory = "X:/Saturated_flow/changedkindox_transient/" + domadd + Reg + "AR_" + t + "/"#change directory as per flow regime
@@ -51,17 +52,18 @@ for Reg in reginvest:
                     pass
                 else:
                     data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
-                    amplitude = sta.norm_amplitudenew(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
+                    amplitude, amplitudebase = sta.conc_norm_amplitude(data, basedata, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
                     for g in gvarnames:
-                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, amplitude[gvarnames.index(g)]])
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, amplitude[gvarnames.index(g)], amplitudebase[gvarnames.index(g)]])
 
-sensitivitydata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Sensitivity"])
+sensitivitydata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Sensitivity", "Sensitivitybase"])
 
 tracerdata = pd.read_csv("Y:/Home/khurana/4. Publications/Restructuring/Paper2/Figurecodes/tracer_combined_05032020.csv", sep = "\t")
 
 ampbth = pd.merge(sensitivitydata, tracerdata[["Trial", "Regime", "fraction", "Time"]], on=["Trial", "Regime"])
 
 ampbth["Sensitivity%"] = ampbth["Sensitivity"] * 100
+ampbth["Sensitivitybase%"] = ampbth["Sensitivitybase"] * 100
 
 ampbth.to_csv("Y:/Home/khurana/4. Publications/Restructuring/Paper2/Figurecodes/Normalized_RMSamplitude_chem.csv", sep="\t")
 

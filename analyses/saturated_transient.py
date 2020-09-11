@@ -202,21 +202,73 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
     
     return conctime, TotalFlow, Headinlettime
 
-def conc_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
+def calcsum_temp(data, yin,yout,xleft,xright,gvarnames,flowregime):
+    import data_reader.data_processing as proc
+    species = proc.speciesdict(flowregime)
+    vedge = 0.005
+    velem = 0.01
+    por = 0.2
+    vbc = 0.5 * 0.3
+    df = data
+    sumalltime = np.zeros([np.shape(df)[1] - 1, len(gvarnames)])
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    else:
+        satiredg = df[4, 1:, yin, xright]
+        satiledg = df[4, 1:, yin, xleft]
+        satoredg = df[4, 1:, yout, xright]
+        satoledg = df[4, 1:, yout, xleft]
+        satoelem = df[4, 1:, yout, xleft + 1 : xright]
+        satielem = df[4, 1:, yin, xleft + 1 : xright]
+        satlelem = df[4, 1:, yin + 1 : yout, xleft]
+        satrelem = df[4, 1:, yin + 1 : yout, xright]
+        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+    for g in gvarnames:
+        b = gvarnames.index(g)
+        sumalltime[:, b] = ((df[species[g]['TecIndex'], 1:, yin, xleft] * satiledg
+                    + df[species[g]['TecIndex'], 1:, yout, xleft] * satoledg
+                    + df[species[g]['TecIndex'], 1:, yin, xright] * satiredg
+                    + df[species[g]['TecIndex'], 1:, yout, xright] * satoredg)* vedge**2
+                + (np.sum(df[species[g]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,axis=-1)
+                    + np.sum(df[species[g]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,axis=-1)
+                    + np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem,axis=-1)
+                    + np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem,axis=-1)
+                    )* vedge * velem
+            + np.sum(np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]* satelem, axis=-1),
+                     axis=-1)* velem**2)*por/vbc
+
+    return sumalltime
+
+
+def conc_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
     
     massflux_amplitude = np. zeros([len(gvarnames)])
+    massflux_amplitude_basecase = np. zeros([len(gvarnames)])
     normavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
+    baseavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
     
     conctime, TotalFlow, Headinlettime = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    baseconctime, baseTotalFlow, baseHeadinlettime = calcconcmasstimenew (benchmark,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
     
     for g in gvarnames:
         normavgconcout[:, gvarnames.index(g)] = conctime[:, yout, gvarnames.index(g)] / np.mean(conctime[:, yout, gvarnames.index(g)])
+        baseavgconcout[:, gvarnames.index(g)] = conctime[:, yout, gvarnames.index(g)] / np.mean(baseconctime[-1, yout, gvarnames.index(g)])
     
     for g in gvarnames:
         f, Pxx_spec = signal.periodogram(normavgconcout[:, gvarnames.index(g)], scaling="spectrum")
         massflux_amplitude[gvarnames.index(g)] = np.sqrt(Pxx_spec.max())
+        basef, basePxx_spec = signal.periodogram(baseavgconcout[:, gvarnames.index(g)], scaling="spectrum")
+        massflux_amplitude_basecase[gvarnames.index(g)] = np.sqrt(basePxx_spec.max())
 
-    return massflux_amplitude
+    return massflux_amplitude, massflux_amplitude_basecase
 
 def mass_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
     
@@ -1366,80 +1418,6 @@ def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, gva
                 * vedge
             ) / (vbc * velem)
     return biomasstime, bioconctime
-
-
-def calcsum_temp(data, yin,yout,xleft,xright,gvarnames,flowregime):
-    import data_reader.data_processing as proc
-    species = proc.speciesdict(flowregime)
-    vedge = 0.005
-    velem = 0.01
-
-    df = data
-    sumalltime = np.zeros([np.shape(df)[1] - 1, len(gvarnames)])
-    if flowregime == "Saturated":
-        satielem = 1
-        satoelem = 1
-        satlelem = 1
-        satrelem = 1
-        satiredg = 1
-        satiledg = 1
-        satoledg = 1
-        satoredg = 1
-        satelem = 1
-    else:
-        satiredg = df[4, 1:, yin, xright]
-        satiledg = df[4, 1:, yin, xleft]
-        satoredg = df[4, 1:, yout, xright]
-        satoledg = df[4, 1:, yout, xleft]
-        satoelem = df[4, 1:, yout, xleft + 1 : xright]
-        satielem = df[4, 1:, yin, xleft + 1 : xright]
-        satlelem = df[4, 1:, yin + 1 : yout, xleft]
-        satrelem = df[4, 1:, yin + 1 : yout, xright]
-        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-    for g in gvarnames:
-        b = gvarnames.index(g)
-        sumalltime[:, b] = (
-            (
-                (
-                    df[species[g]['TecIndex'], 1:, yin, xleft] * satiledg
-                    + df[species[g]['TecIndex'], 1:, yout, xleft] * satoledg
-                    + df[species[g]['TecIndex'], 1:, yin, xright] * satiredg
-                    + df[species[g]['TecIndex'], 1:, yout, xright] * satoredg
-                )
-                * vedge**2
-                + (
-                    np.sum(
-                        df[species[g]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
-                        axis=-1,
-                    )
-                    + np.sum(
-                        df[species[g]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
-                        axis=-1,
-                    )
-                    + np.sum(
-                        df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem,
-                        axis=-1,
-                    )
-                    + np.sum(
-                        df[species[g]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem,
-                        axis=-1,
-                    )
-                )
-                * vedge * velem
-            )
-            + np.sum(
-                np.sum(
-                    df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
-                    * satelem,
-                    axis=-1,
-                ),
-                axis=-1,
-            )
-            * velem
-            * velem
-        )
-
-    return sumalltime
 
 def correlationanalysis(
     directory,

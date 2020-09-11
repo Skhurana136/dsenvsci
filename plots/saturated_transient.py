@@ -2200,33 +2200,10 @@ def RMS_chem_2x2(data, Chemseries, plotvar, yaxislabel, Regimetoplot):
 
 
 def correlationdistributionchem(data, Chemseries):
-    bins = [
-        -1.1,
-        -1,
-        -0.9,
-        -0.8,
-        -0.7,
-        -0.6,
-        -0.5,
-        -0.4,
-        -0.3,
-        -0.2,
-        -0.1,
-        0,
-        0.1,
-        0.2,
-        0.3,
-        0.4,
-        0.5,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-        1,
-        1.1,
-    ]
+    bins = [-1.1,-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,
+            0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,1.1]
     centers = np.mean([bins[:-1], bins[1:]], axis=0)
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=[11, 8], sharex=True)
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=[8, 8], sharex=True)
     for k in Chemseries:
         datac = data[data["Chem"] == k]
         ax1 = axes.flat[Chemseries.index(k)]
@@ -2318,7 +2295,7 @@ def correlationdistributionbiomass(data, Chemseries):
         1.1,
     ]
     centers = np.mean([bins[:-1], bins[1:]], axis=0)
-    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=[10, 6], sharex="col")
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=[10, 8], sharex="col")
     for k in Chemseries:
         datac = data[(data["Chem"] == k)]
         ax1 = axes.flat[Chemseries.index(k)]
@@ -2381,7 +2358,7 @@ def correlationdistributionbiomass(data, Chemseries):
     )
     plt.annotate(
         "Number of scenarios",
-        xy=(0, 2.2),
+        xy=(0, 1.8),
         xytext=(-450, -150),
         xycoords="axes fraction",
         textcoords="offset points",

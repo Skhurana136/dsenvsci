@@ -193,8 +193,64 @@ def calcmassfluxnew(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime)
                         )
                     ) / por
     return massfluxin, massfluxout
-
     
+def calcsum(data,yin,yout,xleft,xright,gvarnames,flowregime):
+    import data_reader.data_processing as proc
+    species = proc.speciesdict(flowregime)
+    vedge = 0.005
+    velem = 0.01
+    por = 0.2
+    vbc = 0.5 * 0.3
+    df = data
+    sumall = np.zeros([len(gvarnames)])
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    else:
+        satielem = df[4, -1, yin, xleft + 1 : xright]
+        satoelem = df[4, -1, yout, xleft + 1 : xright]
+        satiredg = df[4, -1, yin, xright]
+        satiledg = df[4, -1, yin, xright]
+        satoledg = df[4, -1, yout, xleft]
+        satoredg = df[4, -1, yout, xright]
+        satlelem = df[4, -1, yin + 1 : yout, xleft]
+        satrelem = df[4, -1, yin + 1 : yout, xright]
+        satelem = df[4, -1, yin + 1 : yout, xleft + 1 : xright]
+    for g in gvarnames:
+        idx = gvarnames.index(g)
+        sumall[idx] = (((df[species[g]['TecIndex'], -1, yin, xleft] * satiledg
+                        + df[species[g]['TecIndex'], -1, yout, xleft] * satoledg
+                        + df[species[g]['TecIndex'], -1, yin, xright] * satiredg
+                        + df[species[g]['TecIndex'], -1, yout, xright] * satoredg
+                    )*vedge**2
+                    + (sum(df[species[g]['TecIndex'],-1,yin,xleft + 1 : xright]*satielem)
+                        + sum(df[species[g]['TecIndex'],-1,yout,xleft + 1 : xright]*satoelem)
+                        + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xleft]* satlelem)
+                        + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xright]* satrelem)
+                    )* vedge * velem)
+                    + sum(sum(df[species[g]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]* satelem))
+                * velem**2)*por/vbc
+    return sumall
+
+def calcoxiccells(limit,Trial,Het,Anis,gw,d,fpre,fsuf,yin,yout,xleft,xright,vars,gvarnames):
+    oxiccells = np.zeros([len(Trial), 51, 1])
+    for j in range(len(Trial)):
+        df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(Trial[j],Het[j],Anis[j],
+            gw,d,fpre,fsuf,yin,yout,xleft,xright,vars,gvarnames)
+        c = []
+        for k in range(51):
+            c.append(np.count_nonzero(df[vars[gvarnames.index("DO")] - 3, np.shape(df)[1] - 1, k, :]>limit))
+        oxiccells[j, :, 0] = c
+
+    return oxiccells
+
 def calcmassflux(
     Trial,
     Het,
@@ -439,206 +495,3 @@ def calcmassflux(
             # comparing removal with homogeneous case
             mf[idx, 8] = mf[idx, 6] / mf[i, 6]
     return mf
-
-
-def calcsum(data,yin,yout,xleft,xright,gvarnames,flowregime):
-    import data_reader.data_processing as proc
-    species = proc.speciesdict(flowregime)
-    vedge = 0.005
-    velem = 0.01
-    por = 0.2
-    df = data
-    #    sumall = np.zeros([len(Trial)*len(vars),9])
-    sumall = np.zeros([len(gvarnames)])
-    if flowregime == "Saturated":
-        satielem = 1
-        satoelem = 1
-        satlelem = 1
-        satrelem = 1
-        satiredg = 1
-        satiledg = 1
-        satoledg = 1
-        satoredg = 1
-        satelem = 1
-    else:
-        satielem = df[4, -1, yin, xleft + 1 : xright]
-        satoelem = df[4, -1, yout, xleft + 1 : xright]
-        satiredg = df[4, -1, yin, xright]
-        satiledg = df[4, -1, yin, xright]
-        satoledg = df[4, -1, yout, xleft]
-        satoredg = df[4, -1, yout, xright]
-        satlelem = df[4, -1, yin + 1 : yout, xleft]
-        satrelem = df[4, -1, yin + 1 : yout, xright]
-        satelem = df[4, -1, yin + 1 : yout, xleft + 1 : xright]
-    for g in gvarnames:
-        idx = gvarnames.index(g)
-        sumall[idx] = (
-                (
-                    (
-                        df[species[g]['TecIndex'], -1, yin, xleft] * satiledg
-                        + df[species[g]['TecIndex'], -1, yout, xleft] * satoledg
-                        + df[species[g]['TecIndex'], -1, yin, xright] * satiredg
-                        + df[species[g]['TecIndex'], -1, yout, xright] * satoredg
-                    )
-                    * vedge
-                    * vedge
-                    + (
-                        sum(
-                            df[species[g]['TecIndex'],
-                                -1,
-                                yin,
-                                xleft + 1 : xright,
-                            ]
-                            * satielem
-                        )
-                        + sum(df[species[g]['TecIndex'],
-                                -1,
-                                yout,
-                                xleft + 1 : xright,
-                            ]
-                            * satoelem
-                        )
-                        + sum(
-                            df[species[g]['TecIndex'], -1, yin + 1 : yout, xleft]
-                            * satlelem
-                        )
-                        + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xright]
-                            * satrelem
-                        )
-                    )
-                    * vedge
-                    * velem
-                )
-                + sum(
-                    sum(
-                        df[species[g]['TecIndex'],
-                            -1,
-                            yin + 1 : yout,
-                            xleft + 1 : xright,
-                        ]
-                        * satelem
-                    )
-                )
-                * velem
-                * velem
-            ) * por
-    return sumall
-
-
-def calcaggres(mf):
-    H = sorted(np.unique(mf[:, 1, ...]))
-    A = sorted(np.unique(mf[..., 2]))
-    C = sorted(np.unique(mf[..., 3]))
-    meanresults = []
-    stdresults = []
-    covresults = []
-    for i in H:
-        remH = mf[np.where(mf[..., 1] == i)]
-        for j in A:
-            remHA = remH[np.where(remH[..., 2] == j)]
-            for k in C:
-                meanresults.append(
-                    [
-                        np.mean(remHA[np.where(remHA[..., 3] == k)][..., 6]),
-                        np.mean(remHA[np.where(remHA[..., 3] == k)][..., 7]),
-                        i,
-                        j,
-                        k,
-                    ]
-                )
-                stdresults.append(
-                    [
-                        np.std(remHA[np.where(remHA[..., 3] == k)][..., 6]),
-                        np.std(remHA[np.where(remHA[..., 3] == k)][..., 7]),
-                        i,
-                        j,
-                        k,
-                    ]
-                )
-                covresults.append(
-                    [
-                        np.cov(remHA[np.where(remHA[..., 3] == k)][..., 7]),
-                        np.cov(remHA[np.where(remHA[..., 3] == k)][..., 7]),
-                        i,
-                        j,
-                        k,
-                    ]
-                )
-    cleanmresults = [x for x in meanresults if str(x[0]) != "nan"]
-    cleansresults = [x for x in stdresults if str(x[0]) != "nan"]
-    cleancresults = [x for x in covresults if str(x[0]) != "nan"]
-    meanresultsarr = np.array(cleanmresults)
-    stdresultsarr = np.array(cleansresults)
-    covresultsarr = np.array(cleancresults)
-    return meanresultsarr, stdresultsarr, covresultsarr
-
-
-def calcoxiccells(
-    limit,
-    Trial,
-    Het,
-    Anis,
-    gw,
-    d,
-    fpre,
-    fsuf,
-    yin,
-    yout,
-    xleft,
-    xright,
-    vars,
-    gvarnames,
-):
-    oxiccells = np.zeros([len(Trial), 51, 1])
-    for j in range(len(Trial)):
-        df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(
-            Trial[j],
-            Het[j],
-            Anis[j],
-            gw,
-            d,
-            fpre,
-            fsuf,
-            yin,
-            yout,
-            xleft,
-            xright,
-            vars,
-            gvarnames,
-        )
-        c = []
-        for k in range(51):
-            c.append(
-                np.count_nonzero(
-                    df[vars[gvarnames.index("DO")] - 3, np.shape(df)[1] - 1, k, :]
-                    > limit
-                )
-            )
-        #        print (Trial[j], c)
-        #        print ("Calculating number of oxic cells: ", c)
-        oxiccells[j, :, 0] = c
-
-    return oxiccells
-
-
-# ATTENTION!!!!
-# This function needs to be checked:
-# def removalperbiomass():
-#    removal = pd.read_csv("X:/massflux_withbreakthrough_revisedwithmobilebiomass.csv", delimiter="\t")
-#    Biomass = pd.read_csv("X:/biomass_withbreakthrough.csv", delimiter = "\t")
-#    newseries = removal[removal["Chem"]=="DO"]
-#    newseries['Rem'] = 100*(newseries.loc[:,"Inlet_massflux"] - newseries.loc[:,"Outlet_massflux"])/newseries.loc[:,"Inlet_massflux"]
-#    newb1series = Biomass[Biomass["Chem"]=="Active fixed Aerobes"]
-#    newb2series = Biomass[Biomass["Chem"]=="Active mobile Aerobes"]
-#    newbseries = newb1series.loc[:,'Total_biomass'].reset_index().add(newb2series.loc[:,'Total_biomass'].reset_index())
-#    num = newseries.loc[:,'Rem'].reset_index().to_numpy
-#    b = newbseries.loc[:,'Total_biomass'].reset_index().to_numpy
-#    for i in range(len(num)):
-#        num[:,'Rem'][i]/b[i]
-#    newseries.loc[:,'Rem'].reset_index().div(newbseries.loc[:,'Total_biomass'].reset_index())
-
-#    num.div(newbseries.loc[:,'Total_biomass'].reset_index())
-#    for i in range(len(newseries)):
-#        newseries.loc[:,'Rem'].reset_index().div(newbseries.loc[:,'Total_biomass'].reset_index())
-#    return mf
-#

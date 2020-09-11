@@ -30,8 +30,9 @@ Trial = list(scdict.keys())
 reginvest = Regimes
 domaininvest = list(domainodes.keys())[:1]
 
-vardict = proc.mastermicrobialspecies("Saturated")
-gvarnames = list(t for t in vardict.keys() if vardict[t]["Location"]== "Immobile")
+vardict = proc.speciesdict("Saturated")
+states = ["Active", "Inactive"]
+gvarnames = list(t for t in vardict.keys() if vardict[t]["State"] in (states))
 
 row = []
 for Reg in reginvest:
@@ -40,7 +41,7 @@ for Reg in reginvest:
             domadd = domain + "_"
         else:
             domadd = ""
-        for t in ["0", "2", "5", "1"]:
+        for t in ["1"]:
             directory = "D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             #directory = "X:/Saturated_flow/changedkindox_transient/" + domadd + Reg + "AR_" + t + "/"#change directory as per flow regime
             print (Reg, domain, t)
@@ -49,9 +50,12 @@ for Reg in reginvest:
                 if t == "0":
                     meanmass = sssa.calcsum(data, 0, -1, 0, -1, gvarnames, "Saturated")
                 else:
-                    mass = sta.calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
-#                    mass = sta.biomasstimefunc(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
-                    meanmass = np.mean(mass, axis = 0)
+                    if ((j == '52' and t == "5") or (j == '43' and t == "1")):
+                        pass
+                    else:
+                        mass = sta.calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
+#                        mass = sta.biomasstimefunc(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
+                        meanmass = np.mean(mass, axis = 0)
                 summass = sum(meanmass)
                 masscontribution = meanmass/summass
                 for g in gvarnames + ["Total"]:
