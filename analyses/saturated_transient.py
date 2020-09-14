@@ -252,6 +252,8 @@ def conc_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirec
     
     massflux_amplitude = np. zeros([len(gvarnames)])
     massflux_amplitude_basecase = np. zeros([len(gvarnames)])
+    maxwhere = np. zeros([len(gvarnames)])
+    basemaxwhere = np. zeros([len(gvarnames)])
     normavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
     baseavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
     
@@ -265,26 +267,38 @@ def conc_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirec
     for g in gvarnames:
         f, Pxx_spec = signal.periodogram(normavgconcout[:, gvarnames.index(g)], scaling="spectrum")
         massflux_amplitude[gvarnames.index(g)] = np.sqrt(Pxx_spec.max())
+        maxwhere[gvarnames.index(g)] = np.argmax(Pxx_spec)
         basef, basePxx_spec = signal.periodogram(baseavgconcout[:, gvarnames.index(g)], scaling="spectrum")
         massflux_amplitude_basecase[gvarnames.index(g)] = np.sqrt(basePxx_spec.max())
+        basemaxwhere[gvarnames.index(g)] = np.argmax(basePxx_spec)
 
-    return massflux_amplitude, massflux_amplitude_basecase
+    return massflux_amplitude, maxwhere, massflux_amplitude_basecase, basemaxwhere
 
-def mass_norm_amplitude(data, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
+def mass_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
     
     mass_amplitude = np. zeros([len(gvarnames)])
+    basemass_amplitude = np. zeros([len(gvarnames)])
+    maxwhere = np. zeros([len(gvarnames)])
+    basemaxwhere = np. zeros([len(gvarnames)])
     normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
+    baseavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     
     masstime = calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
+    basemasstime = calcsum_temp(benchmark, 0, -1, 0, -1, gvarnames, "Saturated")
     
     for g in gvarnames:
         normavgmass[:, gvarnames.index(g)] = masstime[:, gvarnames.index(g)] / np.mean(masstime[:, gvarnames.index(g)])
+        baseavgmass[:, gvarnames.index(g)] = masstime[:, gvarnames.index(g)] / basemasstime[-1, gvarnames.index(g)]
     
     for g in gvarnames:
         f, Pxx_spec = signal.periodogram(normavgmass[:, gvarnames.index(g)], scaling="spectrum")
         mass_amplitude[gvarnames.index(g)] = np.sqrt(Pxx_spec.max())
+        maxwhere[gvarnames.index(g)] = np.argmax(Pxx_spec)
+        bf, basePxx_spec = signal.periodogram(baseavgmass[:, gvarnames.index(g)], scaling="spectrum")
+        basemass_amplitude[gvarnames.index(g)] = np.sqrt(basePxx_spec.max())
+        basemaxwhere[gvarnames.index(g)] = np.argmax(basePxx_spec)
 
-    return mass_amplitude
+    return mass_amplitude, maxwhere, basemass_amplitude, basemaxwhere
 
 def correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     df = numpyarray

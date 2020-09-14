@@ -43,6 +43,7 @@ for Reg in reginvest:
             domadd = domain + "_"
         else:
             domadd = ""
+        benchmark = np.load("D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_0/NS-AH/NS-AH_df.npy")
         for t in ["1", "2", "5"]:
 #            directory = "//tsclient/D/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
             directory = "D:/Saturated_flow/EGUGoldschmidtdataset6/" + domadd + Reg + "AR_" + t + "/"
@@ -53,17 +54,18 @@ for Reg in reginvest:
                     pass
                 else:
                     data = np.load(directory + "NS-A"+j+"/NS-A"+j+"_df.npy")
-                    amplitude = sta.mass_norm_amplitude(data, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
+                    amplitude, baseamp = sta.mass_norm_amplitude(data, benchmark, 0, -1, 0, -1, domainodes[domain]['ynodes'], gvarnames, "Saturated")
                     for g in gvarnames:
-                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, amplitude[gvarnames.index(g)]])
+                        row.append([j,scdict[j]['Het'], scdict[j]['Anis'], domain, Reg, t, g, amplitude[gvarnames.index(g)], baseamp[gvarnames.index(g)]])
 
-sensitivitydata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Sensitivity"])
+sensitivitydata = pd.DataFrame.from_records (row, columns = ["Trial", "Variance", "Anisotropy", "Domain", "Regime", "Time_series", "Chem", "Sensitivity", "Sensitivitybase"])
 
 tracerdata = pd.read_csv("Z:/tracer_combined_05032020.csv", sep = "\t")
 
 ampbth = pd.merge(sensitivitydata, tracerdata[["Trial", "Regime", "fraction", "Time"]], on=["Trial", "Regime"])
 
 ampbth["Sensitivity%"] = ampbth["Sensitivity"] * 100
+ampbth["Sensitivitybase%"] = ampbth["Sensitivitybase"] * 100
 
 ampbth.to_csv("Z:/Normalized_RMSamplitude_biomass.csv", sep="\t")
 
