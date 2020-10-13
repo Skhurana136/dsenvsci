@@ -132,6 +132,15 @@ cov1 = np.round(np.cov(head["H1"]),2)
 cov2 = np.round(np.cov(head["H2"]),2)
 cov3 = np.round(np.cov(head["H3"]),2)
 
+from statsmodels.tsa import stattools
+cov1 = np.round(stattools.acovf(head["H1"], fft = True),2)
+cov2 = np.round(stattools.acovf(head["H2"], fft = True),2)
+cov3 = np.round(stattools.acovf(head["H3"], fft = True),2)
+
+cov1tim = np.where(stattools.acf(head["H1"], fft = True, nlags = 5476) < 0.75)[0][0]
+cov2tim = np.where(stattools.acf(head["H2"], fft = True, nlags = 5476) < 0.75)[0][0]
+cov3tim = np.where(stattools.acf(head["H3"], fft = True, nlags = 5476) < 0.75)[0][0]
+
 path_da_data = "Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/Conc_da_ss.csv"
 da = pd.read_csv(path_da_data, sep = "\t")
 
