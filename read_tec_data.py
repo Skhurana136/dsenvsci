@@ -46,6 +46,23 @@ for Regime in reginvest:
                 print(Headers[i + 3], np.mean(df[i, -1, 0, :]))
             print(np.mean(df[2, -1, :, :]))
 
+for Regime in Regimes:
+    directory = "X:/Richards_flow/Tracer_studies/" + Regime + "AR/" + fpre #change directory as per flow regime
+    for j in list(scdict.keys()):
+        print(j)
+        fwithd = directory + j + fsuf + filename #complete path to file
+        print("Reading tech file....")
+        size, steps, Headers, D = rdr.readTecfile(fwithd) #read the tec file
+        print("Converting to array....")
+        df = rdr.Convertetoarray(D, "tec", 51, horiznodes) #Convert the coarse grid in to 51x31 array
+        print("Saving numpy array....") 
+        np.save(directory + j + fsuf + fpre + j +  "_df", df)
+        # Test for correct orientation of the data
+        for i in range(np.shape(df)[0]):
+            print(Headers[i + 3], np.mean(df[i, -1, 0, :]))
+            print(np.mean(df[2, -1, :, :]))
+
+
 def file(j):
     fwithd = directory + j + fsuf + filename #complete path to file
     print("Reading tech file....")

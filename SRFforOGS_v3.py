@@ -17,17 +17,17 @@ extnf = "png"
 pref = "A"
 randomkeyword = "-T"
 
-v = [5, 5, 5]
-# v2 = [2, 5, 10]
+#v = [5, 5, 5]
+v = [2, 5, 10]
 ls = [0.1]
 an = [2, 5, 10]
 counter = 37  # First realization series
-counter = 46  # Second realization series
-counter = 55  # Third realization series
-counter = (
-    64
-)  # Fourth realization with an extra variance of 5 which was not included earlier
-counter = 76  # three more realizations for variance of 5
+#counter = 46  # Second realization series
+#counter = 55  # Third realization series
+#counter = (
+#    64
+#)  # Fourth realization with an extra variance of 5 which was not included earlier
+#counter = 76  # three more realizations for variance of 5
 for i in range(len(v)):
     for j in range(len(ls)):
         for k in range(len(an)):

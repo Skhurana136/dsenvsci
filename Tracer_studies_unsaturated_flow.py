@@ -46,8 +46,8 @@ vedge = 0.005
 velem = 0.01
 vbc = 0.3
 por = 0.2
-Regimes = ["Equal", "Fast"]
-steps = [20*0.005, 5 * 0.0002]
+Regimes = ["Equal", "Fast", "Slow"]
+steps = [20*0.005, 5 * 0.0002, 200*0.005]
 #steps = [500 * 0.005, 200*0.005, 500 * 0.0002]
 #Regimes = ["Slow", "Equal", "Fast"]
 
@@ -76,7 +76,7 @@ for Reg, step in zip(Regimes, steps):
         breakthrough2.append([t, h, a, "Tracer", s*Time[0][0], (s*Time[0][0])/initial, r])
 
 data = pd.DataFrame(breakthrough2, columns = ["Trial", "Variance", "Anisotropy", "Chem", "Time", "fraction", "Regime"])
-f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_01072020.csv"
+f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_04112020.csv"
 data.to_csv(f, sep = '\t')
         
 # plotting boxplots to see variance of breakthrough from homogeneous scenario
