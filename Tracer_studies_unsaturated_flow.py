@@ -27,7 +27,7 @@ Anis = list(values['Anis'] for t,values in scdict.items())
 # setup what we really want to investigate
 # Default:
 # Variations:
-#notlist = [43,54]
+#notlist = ['43','46', '78', '79']
 #Trial = list(t for t,values in scdict.items() if t not in notlist)
 #Het = list(values['Het'] for t,values in scdict.items() if t not in notlist)
 #Anis = list(values['Anis'] for t,values in scdict.items() if t not in notlist)
@@ -58,7 +58,7 @@ for Reg, step in zip(Regimes, steps):
         r = "Medium"
     else:
         r = Reg
-    d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR/"
+    d = r"X:/Richards_flow/Tracer_studies/" + Reg + "AR_eve/"
     fpre = "RF-A"
     df, conctime, masstime, Velocity, head = uta.calcconcmasstime('H', scdict['H']['Het'], scdict['H']['Het'], gw, d, fpre, fsuf, yin, yout, xleft, xright, vars, gvarnames)
     print(np.mean(df[vely - 3, 1:, :, :]))
@@ -76,7 +76,7 @@ for Reg, step in zip(Regimes, steps):
         breakthrough2.append([t, h, a, "Tracer", s*Time[0][0], (s*Time[0][0])/initial, r])
 
 data = pd.DataFrame(breakthrough2, columns = ["Trial", "Variance", "Anisotropy", "Chem", "Time", "fraction", "Regime"])
-f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_04112020.csv"
+f = r"X:/Richards_flow/Tracer_studies/tracer_equalfast_06112020.csv"
 data.to_csv(f, sep = '\t')
         
 # plotting boxplots to see variance of breakthrough from homogeneous scenario

@@ -47,7 +47,7 @@ for Regime in reginvest:
             print(np.mean(df[2, -1, :, :]))
 
 for Regime in Regimes:
-    directory = "X:/Richards_flow/Tracer_studies/" + Regime + "AR/" + fpre #change directory as per flow regime
+    directory = "X:/Richards_flow/Tracer_studies/" + Regime + "AR_eve/" + fpre #change directory as per flow regime
     for j in list(scdict.keys()):
         print(j)
         fwithd = directory + j + fsuf + filename #complete path to file
