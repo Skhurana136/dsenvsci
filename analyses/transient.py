@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 
-def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
+def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     import data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
@@ -39,16 +39,21 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
         satoledg = 1
         satoredg = 1
         satelem = 1
-    elif flowregime == "Unsaturated":
-        satiredg = df[4, 1:, yin, xright]
-        satiledg = df[4, 1:, yin, xleft]
-        satoredg = df[4, 1:, yout, xright]
-        satoledg = df[4, 1:, yout, xleft]
-        satoelem = df[4, 1:, yout, xleft + 1 : xright]
-        satielem = df[4, 1:, yin, xleft + 1 : xright]
-        satlelem = df[4, 1:, yin + 1 : yout, xleft]
-        satrelem = df[4, 1:, yin + 1 : yout, xright]
-        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+    else:
+        def effsat(data):
+            slope = 1/(0.8-0.2)
+            constant = -1/3
+            sat = slope*data + constant
+            return sat
+        satiredg = effsat(df[4, 1:, yin, xright])
+        satiledg = effsat(df[4, 1:, yin, xleft])
+        satoredg = effsat(df[4, 1:, yout, xright])
+        satoledg = effsat(df[4, 1:, yout, xleft])
+        satoelem = effsat(df[4, 1:, yout, xleft + 1 : xright])
+        satielem = effsat(df[4, 1:, yin, xleft + 1 : xright])
+        satlelem = effsat(df[4, 1:, yin + 1 : yout, xleft])
+        satrelem = effsat(df[4, 1:, yin + 1 : yout, xright])
+        satelem = effsat(df[4, 1:, yin + 1 : yout, xleft + 1 : xright])
     for i in gvarnames:
         idx = gvarnames.index(i)
         if i == "Nitrogen":
@@ -156,7 +161,7 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
                     + (np.sum(df[species[i]['TecIndex'], 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem,
-                            axis=-1))* velem) / (vedge * (veliredg + veliledg) + velem*np.sum(velielem, axis=-1))
+                            axis=-1))* velem) / (vedge * (veliredg*satiredg + veliledg*satiledg) + velem*np.sum(velielem*satielem, axis=-1))
            conctime[1:, yout, idx] = (
                     (
                         df[species[i]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg
@@ -172,7 +177,7 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
                         )
                     )
                     * velem
-                ) / (vedge * (veloredg + veloledg) + np.sum(velem * veloelem, axis=-1))
+                ) / (vedge * (veloredg*satoredg + veloledg*satoledg) + np.sum(velem * veloelem*satoelem, axis=-1))
            conctime[1:, yin + 1 : yout, idx] = (
                     np.sum(
                         df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
@@ -181,14 +186,9 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
                         * velelem,
                         axis=-1,
                     )
-                    + (
-                        df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem * vellelem
-                        + df[species[i]['TecIndex'], 1:, yin + 1 : yout, xright]
-                        * satrelem
-                        * velrelem
-                    )
-                    * vedge
-                ) / (vedge * (vellelem + velrelem) + np.sum(velem * velelem, axis=-1))
+                    + vedge*(df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem * vellelem
+                        + df[species[i]['TecIndex'], 1:, yin + 1 : yout, xright]*satrelem*velrelem)
+                ) / (vedge * (vellelem*satlelem + velrelem*satrelem) + np.sum(velem * velelem*satelem, axis=-1))
 
     TotalFlow = (veliledg + veloledg + veliredg + veloredg) * vedge + (
         np.sum(vellelem)
@@ -202,7 +202,7 @@ def calcconcmasstimenew (numpyarray,yin,yout,xleft,xright, nodesinydirection, gv
     
     return conctime, TotalFlow, Headinlettime
 
-def calcsum_temp(data, yin,yout,xleft,xright,gvarnames,flowregime):
+def biomass_time(data, yin,yout,xleft,xright,gvarnames,flowregime):
     import data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     vedge = 0.005
@@ -222,15 +222,20 @@ def calcsum_temp(data, yin,yout,xleft,xright,gvarnames,flowregime):
         satoredg = 1
         satelem = 1
     else:
-        satiredg = df[4, 1:, yin, xright]
-        satiledg = df[4, 1:, yin, xleft]
-        satoredg = df[4, 1:, yout, xright]
-        satoledg = df[4, 1:, yout, xleft]
-        satoelem = df[4, 1:, yout, xleft + 1 : xright]
-        satielem = df[4, 1:, yin, xleft + 1 : xright]
-        satlelem = df[4, 1:, yin + 1 : yout, xleft]
-        satrelem = df[4, 1:, yin + 1 : yout, xright]
-        satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
+        def effsat(data):
+            slope = 1/(0.8-0.2)
+            constant = -1/3
+            sat = slope*data + constant
+            return sat
+        satiredg = effsat(df[4, 1:, yin, xright])
+        satiledg = effsat(df[4, 1:, yin, xleft])
+        satoredg = effsat(df[4, 1:, yout, xright])
+        satoledg = effsat(df[4, 1:, yout, xleft])
+        satoelem = effsat(df[4, 1:, yout, xleft + 1 : xright])
+        satielem = effsat(df[4, 1:, yin, xleft + 1 : xright])
+        satlelem = effsat(df[4, 1:, yin + 1 : yout, xleft])
+        satrelem = effsat(df[4, 1:, yin + 1 : yout, xright])
+        satelem = effsat(df[4, 1:, yin + 1 : yout, xleft + 1 : xright])
     for g in gvarnames:
         b = gvarnames.index(g)
         sumalltime[:, b] = ((df[species[g]['TecIndex'], 1:, yin, xleft] * satiledg
@@ -256,9 +261,8 @@ def conc_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirec
     basemaxwhere = np. zeros([len(gvarnames)])
     normavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
     baseavgconcout = np.zeros([np.shape(data)[1], len(gvarnames)])
-    
-    conctime, TotalFlow, Headinlettime = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
-    baseconctime, baseTotalFlow, baseHeadinlettime = calcconcmasstimenew (benchmark,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    conctime, TotalFlow, Headinlettime = conc_time(data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    baseconctime, baseTotalFlow, baseHeadinlettime = conc_time(benchmark,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
     
     for g in gvarnames:
         normavgconcout[:, gvarnames.index(g)] = conctime[:, yout, gvarnames.index(g)] / np.mean(conctime[:, yout, gvarnames.index(g)])
@@ -283,8 +287,8 @@ def mass_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirec
     normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     baseavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     
-    masstime = calcsum_temp(data, 0, -1, 0, -1, gvarnames, "Saturated")
-    basemasstime = calcsum_temp(benchmark, 0, -1, 0, -1, gvarnames, "Saturated")
+    masstime = biomass_time(data, 0, -1, 0, -1, gvarnames, "Saturated")
+    basemasstime = biomass_time(benchmark, 0, -1, 0, -1, gvarnames, "Saturated")
     
     for g in gvarnames:
         normavgmass[:, gvarnames.index(g)] = masstime[:, gvarnames.index(g)] / np.mean(masstime[:, gvarnames.index(g)])
@@ -302,7 +306,7 @@ def mass_norm_amplitude(data, benchmark, yin, yout, xleft, xright, nodesinydirec
 
 def correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     df = numpyarray
-    conctime0, TotalFlow, Headinlettime0 = calcconcmasstimenew (df,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    conctime0, TotalFlow, Headinlettime0 = conc_time(df,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
     corrchem = np.zeros([2 * np.shape(Headinlettime0)[0], (len(gvarnames))])
     normavgconcout = np.zeros([np.shape(df)[1], len(gvarnames)])
     
@@ -320,8 +324,8 @@ def correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,f
 
 def mass_correlation(numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
     data = numpyarray
-    masstime = calcsum_temp (data,yin,yout,xleft,xright, gvarnames,flowregime)
-    conctime, TotalFlow, Headinlettime0 = calcconcmasstimenew (data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
+    masstime = biomass_time(data,yin,yout,xleft,xright, gvarnames,flowregime)
+    conctime, TotalFlow, Headinlettime0 = conc_time(data,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime)
     corrchem = np.zeros([2 * np.shape(Headinlettime0)[0]-1, (len(gvarnames))])
     normavgmass = np.zeros([np.shape(data)[1]-1, len(gvarnames)])
     
@@ -670,7 +674,7 @@ def calcaggrestime(mf):
     covresultsarr = np.array(cleancresults)
     return meanresultsarr, stdresultsarr, covresultsarr
 
-
+#DO NOT USE AS IT REQUIRES ENTIRE TRIAL SERIES
 def calcconcmasstime(
     Trial,
     Het,
@@ -683,7 +687,7 @@ def calcconcmasstime(
     yout,
     xleft,
     xright,
-    vars,
+    indices,
     gvarnames,
 ):
     vedge = 0.005
@@ -843,22 +847,22 @@ def calcconcmasstime(
                     1:, yout, i
                 ] = coutlet  # /(sum(veloelem)*velem + (veloledg+veloredg)*vedge)
             else:
-                #                massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*velem*vedge
-                #                massendtimey[yin,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*velem*vedge
-                #                massendtimey[yout,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*velem*vedge
-                #                massendtimey[yin+1:yout, i+1] = sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*velem*vedge
-                #                masstime[1:,yin,i] = (df[vars[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*velem*vedge
-                #                masstime[1:,yout,i] = (df[vars[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*velem*vedge
-                #                masstime[1:,yin+1:yout, i] = np.sum(df[vars[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(velem**2),axis=-1) + ((df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright])*satrelem)*velem*vedge
+                #                massendtime[i] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*velem*vedge
+                #                massendtimey[yin,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*velem*vedge
+                #                massendtimey[yout,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*velem*vedge
+                #                massendtimey[yin+1:yout, i+1] = sum(sum(df[indices[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*velem*vedge
+                #                masstime[1:,yin,i] = (df[indices[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*velem*vedge
+                #                masstime[1:,yout,i] = (df[indices[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*velem*vedge
+                #                masstime[1:,yin+1:yout, i] = np.sum(df[indices[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(velem**2),axis=-1) + ((df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright])*satrelem)*velem*vedge
                 conctime[1:, yin, i] = (
                     (
-                        df[vars[i] - 3, 1:, yin, xleft] * satiledg * veliledg
-                        + df[vars[i] - 3, 1:, yin, xright] * satiredg * veliredg
+                        df[indices[i] - 3, 1:, yin, xleft] * satiledg * veliledg
+                        + df[indices[i] - 3, 1:, yin, xright] * satiredg * veliredg
                     )
                     * (vedge)
                     + (
                         np.sum(
-                            df[vars[i] - 3, 1:, yin, xleft + 1 : xright]
+                            df[indices[i] - 3, 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem,
                             axis=-1,
@@ -868,13 +872,13 @@ def calcconcmasstime(
                 ) / (vedge * (veliredg + veliledg) + np.sum(velem * velielem, axis=-1))
                 conctime[1:, yout, i] = (
                     (
-                        df[vars[i] - 3, 1:, yout, xleft] * satoledg * veloledg
-                        + df[vars[i] - 3, 1:, yout, xright] * satoredg * veloredg
+                        df[indices[i] - 3, 1:, yout, xleft] * satoledg * veloledg
+                        + df[indices[i] - 3, 1:, yout, xright] * satoredg * veloredg
                     )
                     * (vedge)
                     + (
                         np.sum(
-                            df[vars[i] - 3, 1:, yout, xleft + 1 : xright]
+                            df[indices[i] - 3, 1:, yout, xleft + 1 : xright]
                             * satoelem
                             * veloelem,
                             axis=-1,
@@ -884,15 +888,15 @@ def calcconcmasstime(
                 ) / (vedge * (veloredg + veloledg) + np.sum(velem * veloelem, axis=-1))
                 conctime[1:, yin + 1 : yout, i] = (
                     np.sum(
-                        df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
+                        df[indices[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                         * satelem
                         * velem
                         * velelem,
                         axis=-1,
                     )
                     + (
-                        df[vars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem * vellelem
-                        + df[vars[i] - 3, 1:, yin + 1 : yout, xright]
+                        df[indices[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem * vellelem
+                        + df[indices[i] - 3, 1:, yin + 1 : yout, xright]
                         * satrelem
                         * velrelem
                     )
@@ -908,7 +912,7 @@ def calcconcmasstime(
         satoledg = df[4, 1:, yout, xleft]
         satoredg = df[4, 1:, yout, xright]
         satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
-        for i in range(len(vars)):
+        for i in range(len(indices)):
             #           massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[int(np.shape(df)[1])-2])*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft+1:xright]*satelem[int(np.shape(df)[1])-2,:,:]*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft]*satlelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xright]*satrelem[np.shape(df)[1]-2,:]))*velem*vedge
             #           massendtimey[yin,i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[np.shape(df)[1]-2])*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]))*velem*vedge
             #           massendtimey[yout,i] = (df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[np.shape(df)[1]-2])*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]))*velem*vedge
@@ -918,25 +922,25 @@ def calcconcmasstime(
             #           masstime[1:,yin+1:yout, i] = np.sum(df[vars[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(velem**2),axis=-1) + (df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright]*satrelem)*velem*vedge
             conctime[1:, yin, i] = (
                 (
-                    df[vars[i] - 3, 1:, yin, xleft] * satiledg
-                    + df[vars[i] - 3, 1:, yin, xright] * satiredg
+                    df[indices[i] - 3, 1:, yin, xleft] * satiledg
+                    + df[indices[i] - 3, 1:, yin, xright] * satiredg
                 )
                 * (vedge ** 2)
                 + np.sum(
-                    df[vars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem, axis=-1
+                    df[indices[i] - 3, 1:, yin, xleft + 1 : xright] * satielem, axis=-1
                 )
                 * velem
                 * vedge
             ) / (vbc * vedge)
             conctime[1:, yout, i] = (
                 (
-                    df[vars[i] - 3, 1:, yout, xleft] * satoledg
-                    + df[vars[i] - 3, 1:, yout, xright] * satoredg
+                    df[indices[i] - 3, 1:, yout, xleft] * satoledg
+                    + df[indices[i] - 3, 1:, yout, xright] * satoredg
                 )
                 * (vedge ** 2)
                 + (
                     np.sum(
-                        df[vars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
+                        df[indices[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
@@ -945,14 +949,14 @@ def calcconcmasstime(
             ) / (vbc * vedge)
             conctime[1:, yin + 1 : yout, i] = (
                 np.sum(
-                    df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
+                    df[indices[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
                     * (velem ** 2),
                     axis=-1,
                 )
                 + (
-                    df[vars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
-                    + df[vars[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
+                    df[indices[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
+                    + df[indices[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
                 )
                 * velem
                 * vedge
@@ -969,10 +973,11 @@ def calcconcmasstime(
     Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
     return df, massendtime, masstime, conctime, TotalFlow, Headinlettime
 
-
+#DO NOT USE AS IT USES THE ENTIRE TRIAL SERIES
 def calcconcmasstimeX(
     Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
 ):
+    #DO NOT USE AS IT USES THE ENTIRE TRIAL SERIES
     vedge = 0.005
     velem = 0.01
     vbc = 0.3
@@ -1500,7 +1505,7 @@ def correlationanalysis(
                     vars,
                     gvarnames,
                 )
-                sumall0 = calcsum_temp(
+                sumall0 = biomass_time(
                     t,
                     Het[Trial.index(t)],
                     Anis[Trial.index(t)],
@@ -1677,7 +1682,7 @@ def norm_amplitude(
                     vars,
                     gvarnames,
                 )
-                sumall0 = calcsum_temp(
+                sumall0 = biomass_time(
                     t,
                     Het[Trial.index(t)],
                     Anis[Trial.index(t)],

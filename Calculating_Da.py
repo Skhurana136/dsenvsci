@@ -5,6 +5,7 @@ Created on Wed Jul  8 13:24:47 2020
 @author: khurana
 """
 import pandas as pd
+import numpy as np
 import data_reader.data_processing as proc
 
 # Saturated flow regime
@@ -43,8 +44,9 @@ chemdata['fraction_rel_delmf'] = chemdata.reldelmassflux/chemdata.base
 chemdata['avgconc_in'] = chemdata.Inlet_total_mass_flux*0.2/(chemdata.Velocity*0.3)
 chemdata['avgconc_out'] = chemdata.Outlet_mass_flux*0.2/(chemdata.Velocity*0.3)
 chemdata['removal'] = (chemdata['avgconc_in'] - chemdata['avgconc_out']).abs()
-chemdata['removal_rate'] = chemdata['removal']/chemdata['Breakthroughtime']
+chemdata['removal_rate'] = 100*chemdata['removal']/(chemdata['avgconc_in'] * chemdata['Breakthroughtime'])
 chemdata['conc_Da'] = chemdata['removal_rate']*chemdata['Breakthroughtime']
+#chemdata['conc_Da'] = chemdata['removal_rate']/np.log(0.05) #For first order Da estimates
 chemdata["%reldelmassflux"] = chemdata["reldelmassflux"]*100
 chemdata["%del2massflux"] = chemdata["del2massflux"]*100
 chemdata["%fraction_rel_delmf"] = chemdata["fraction_rel_delmf"]*100
@@ -61,7 +63,7 @@ chemdata['fraction_da'] = chemdata.conc_Da/chemdata.Dabase
 chemdata['fraction_PeDa'] = chemdata.PeDa/chemdata.PeDabase
 chemdata["%fraction_da"] = chemdata["fraction_da"]*100
 chemdata['%fraction_PeDa'] = chemdata.fraction_PeDa*100
-chemdata.to_csv("Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/Conc_da_ss.csv", sep = "\t")
+chemdata.to_csv("Y:/Home/khurana/4. Publications/Restructuring/Paper1/Figurecodes/Norm_Conc_da_ss.csv", sep = "\t")
 
 gvarnames = ["DO", "Ammonium", "Nitrate"]
 chemsubset = chemdata[chemdata['Chem'].isin (gvarnames)]

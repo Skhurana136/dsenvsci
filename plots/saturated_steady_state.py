@@ -12,9 +12,9 @@ import seaborn as sns
 from datetime import datetime
 import pandas as pd
 from matplotlib.colors import LogNorm
-from analyses.saturated_steady_state import calcoxiccells
-from analyses.saturated_transient import (
-    calcconcmasstime,
+from analyses.steady_state import oxiccells
+from analyses.transient import (
+    conc_time,
     biomasstimefunc,
     calcconcmasstimeX,
 )
@@ -98,7 +98,8 @@ def norm_mf_2x2(data, variablenames):
     colseries = ["indianred", "g", "steelblue"]
     nrows = 2
     ncols = 2
-    fig, axes = plt.subplots(nrows=nrows, ncols=2, figsize=[11, 8], sharex=True)
+    data["fraction"] = data.fraction*100
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=[11, 8], sharex=True)
     # plt.suptitle("Change in removal of carbon and nitrogen with respect to homogeneous scenario at steady state", fontsize = 20)
     for k in Chems:
         dfc = data[data["Chem"] == k]
@@ -137,8 +138,8 @@ def norm_mf_2x2(data, variablenames):
         fontsize=15,
     )
     plt.annotate(
-        "Fraction of breakthrough time in base case",
-        xy=(-0.7, 0),
+        "Residence time of solutes (%)",
+        xy=(-0.6, 0),
         xytext=(0, -50),
         xycoords="axes fraction",
         textcoords="offset points",
@@ -262,6 +263,57 @@ def steadystate_biomass(data, biomassvariablenames):
 
     return plt
 
+def steadystate_immobile_active_biomass(data, biomassvariablenames):
+    Regimes = ["Slow", "Medium", "Fast"]
+    Chems = biomassvariablenames
+    species = ["Aerobes", "Ammonia oxidizers", "Nitrate reducers"]
+    colseries = ["indianred", "g", "steelblue"]
+    data.fraction = data.fraction*100
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=[20, 8])
+    for k in Chems:
+        dfc = data[data["Chem"] == k]
+        colidx1 = Chems.index(k)
+        for i in Regimes:
+            dfctemp = dfc
+            dfcr = dfctemp[dfctemp["Regime"] == i]
+            print(i, colidx1)
+            axes.flat[colidx1].scatter(
+                "fraction",
+                "Change_umoles",
+                color=colseries[Regimes.index(i)],
+                data=dfcr,
+                label=i + " flow",
+            )
+            axes.flat[colidx1].tick_params(axis="y", labelsize=16)
+            axes.flat[colidx1].tick_params(axis="x", labelsize=16)
+    plt.legend(loc="best", fontsize=12)
+    for ax, typsp in zip(axes, species):
+        ax.set_title(typsp, fontsize=18)
+    plt.annotate(
+        "Normalized biomass in the domain",
+        xy=(-2.5, 0.5),
+        xytext=(-20, 0),
+        xycoords="axes fraction",
+        textcoords="offset points",
+        size="large",
+        ha="left",
+        va="center",
+        rotation="vertical",
+        fontsize=18,
+    )
+    plt.annotate(
+        "Residence time of solutes (%)",
+        xy=(-0.5, -0.1),
+        xytext=(-50, 0),
+        xycoords="axes fraction",
+        textcoords="offset points",
+        size="large",
+        ha="center",
+        va="center",
+        fontsize=18,
+    )
+
+    return plt
 
 def steadystate_active_biomass(data, biomassvariablenames):
     Regimes = ["Slow", "Medium", "Fast"]
@@ -2131,7 +2183,7 @@ def plotoxiccellssdo(
     )
     nrows = 2
     ncols = 4
-    figsize = [14, 8]
+    figsize = [16, 10]
     fig, axes = plt.subplots(
         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
     )

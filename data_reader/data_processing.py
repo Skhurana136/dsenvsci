@@ -293,8 +293,8 @@ def speciesdict(regime):
                 'DO': {"Var": "dox1", "TecIndex": 11 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'DO'},
                 'Ammonium': {"Var": "Amm1", "TecIndex": 12 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Ammonium'},
                 'Nitrate': {"Var": "nitra1", "TecIndex": 17 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Nitrate'},
-                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 3, "State" : "Solid", "Location" : "Mobile", "Graphname" : 'Sulphate'},
-                'Particulate organic matter': {"Var": "POM1", "TecIndex": 30 - 3, "Graphname" : 'Particulate organic matter'},
+                'Sulphate': {"Var": "sulpha1", "TecIndex": 22 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Sulphate'},
+                'Particulate organic matter': {"Var": "POM1", "TecIndex": 30 - 3, "State" : "Solid","Location" : "Mobile","Graphname" : 'Particulate organic matter'},
                 'Immobile active aerobic degraders': {"Var": "Bfo1", "TecIndex": 8 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Aerobic degraders'},
                 'Immobile active nitrate reducers': {"Var": "Bfn1", "TecIndex": 15 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Nitrate reducers'},
                 'Immobile active sulphate reducers': {"Var": "Bfs1", "TecIndex": 20 - 3, "State" : "Active", "Location" : "Immobile", "Graphname" : 'Sulphate reducers'},
@@ -311,6 +311,7 @@ def speciesdict(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
+                'Tracer': {"Var": "tr1", "TecIndex": 8 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
                 }
     elif regime == "Saturated":
         mastervariabledict = {
@@ -336,7 +337,7 @@ def speciesdict(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
-                
+                'Tracer': {"Var": "tr1", "TecIndex": 8 - 4, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
                 }
     
     return mastervariabledict
