@@ -311,7 +311,8 @@ def speciesdict(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 3, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
-                'Tracer': {"Var": "tr1", "TecIndex": 8 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer_study': {"Var": "tr1", "TecIndex": 8 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer': {"Var": "tr1", "TecIndex": 29 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
                 }
     elif regime == "Saturated":
         mastervariabledict = {
@@ -337,7 +338,8 @@ def speciesdict(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
-                'Tracer': {"Var": "tr1", "TecIndex": 8 - 4, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer_study': {"Var": "tr1", "TecIndex": 8 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer': {"Var": "tr1", "TecIndex": 29 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
                 }
     
     return mastervariabledict

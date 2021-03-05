@@ -12,7 +12,7 @@ import seaborn as sns
 from datetime import datetime
 import matplotlib.patches as mpatches
 import matplotlib as mpl
-from analyses.saturated_transient import calcconcmasstime, calcsum_temp
+from analyses.transient import conc_time, biomass_time
 from data_reader.data_processing import localmaxmin
 
 Regimes = ["Slow", "Medium", "Fast"]
@@ -1531,7 +1531,7 @@ def RMSamp_biomass(data, Chemseries, plotvar, yaxislabel, Regimestoplot):
     )
     plt.annotate(
         yaxislabel,
-        xy=(0, 2.2),
+        xy=(-0.2, 2.2),
         xytext=(-450, -150),
         xycoords="axes fraction",
         textcoords="offset points",
