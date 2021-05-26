@@ -88,12 +88,13 @@ def localmaxmin(y1, y2, init):
     return ymax, ymin, xposmax, xposmin
 
 #master dictionary for the scenarios that have been run
-def masterscenarios():
+def masterscenarios(flowregime):
     #keys in this master dictionary refer to scenario names/subfolder names
     #Het refers to the variance in permeability enforced while generating the SRF
     #Anis refer to Anisotropy enforced while generating the SRF
     #Truncatedpowerlaw was used as the variogram model
-    masterdictionary = {
+    if flowregime == "Saturated":
+        masterdictionary = {
             'H': {"Het": 0, "Anis": 1},
             '37': {"Het": 0.1, "Anis": 2},
             '38': {"Het": 0.1, "Anis": 5},
@@ -144,7 +145,59 @@ def masterscenarios():
             '83': {"Het": 5, "Anis": 5},
             '84': {"Het": 5, "Anis": 10},
             }
-    
+    elif flowregime == "Unsaturated":
+               masterdictionary = {
+            'H': {"Het": 0, "Anis": 1},
+            '37': {"Het": 0.1, "Anis": 2},
+            '38': {"Het": 0.1, "Anis": 5},
+            '39': {"Het": 0.1, "Anis": 10},
+            '46': {"Het": 0.1, "Anis": 2},
+            '47': {"Het": 0.1, "Anis": 5},
+            '48': {"Het": 0.1, "Anis": 10},
+            '55': {"Het": 0.1, "Anis": 2},
+            '56': {"Het": 0.1, "Anis": 5},
+            '57': {"Het": 0.1, "Anis": 10},
+            '64': {"Het": 0.1, "Anis": 2},
+            '65': {"Het": 0.1, "Anis": 5},
+            '66': {"Het": 0.1, "Anis": 10},
+            '40': {"Het": 1, "Anis": 2},
+            '41': {"Het": 1, "Anis": 5},
+            '114': {"Het": 1, "Anis": 10},
+            '49': {"Het": 1, "Anis": 2},
+            '50': {"Het": 1, "Anis": 5},
+            '51': {"Het": 1, "Anis": 10},            
+            '58': {"Het": 1, "Anis": 2},
+            '59': {"Het": 1, "Anis": 5},
+            '60': {"Het": 1, "Anis": 10},
+            '67': {"Het": 1, "Anis": 2},
+            '68': {"Het": 1, "Anis": 5},
+            '69': {"Het": 1, "Anis": 10},     
+            '72': {"Het": 5, "Anis": 10},   
+            '76': {"Het": 5, "Anis": 2},
+            '82': {"Het": 5, "Anis": 2},
+            '84': {"Het": 5, "Anis": 10},
+            '89': {"Het": 5, "Anis": 5},
+            '90': {"Het": 5, "Anis": 10},
+            '98': {"Het": 5, "Anis": 5},
+            '107': {"Het": 5, "Anis": 5},
+            '116': {"Het": 5, "Anis": 5},
+            '125': {"Het": 5, "Anis": 2},
+            '142': {"Het": 5, "Anis": 2},
+            '185': {"Het": 5, "Anis": 10},
+            '118': {"Het": 10, "Anis": 2},
+            '54': {"Het": 10, "Anis": 10},
+            '62': {"Het": 10, "Anis": 5},
+            '111': {"Het": 10, "Anis": 10},
+            '119': {"Het": 10, "Anis": 5},
+            '127': {"Het": 10, "Anis": 2},
+            '128': {"Het": 10, "Anis": 5},
+            '137': {"Het": 10, "Anis": 5},
+            '165': {"Het": 10, "Anis": 10},   
+            '174': {"Het": 10, "Anis": 10},
+            '177': {"Het": 10, "Anis": 2},
+            '182': {"Het": 10, "Anis": 2},
+            }
+        
     return masterdictionary
 
 #master dictionary for the scenarios that have been run
@@ -338,8 +391,8 @@ def speciesdict(regime):
                 'Mobile inactive nitrate reducers': {"Var": "Bimn1", "TecIndex": 19 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Nitrate reducers'},
                 'Mobile inactive sulphate reducers': {"Var": "Bims1", "TecIndex": 24 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Sulphate reducers'},
                 'Mobile inactive ammonia oxidizers': {"Var": "Bima1", "TecIndex": 28 - 4, "State" : "Inactive", "Location" : "Mobile", "Graphname" : 'Ammonia oxidizers'},
-                'Tracer_study': {"Var": "tr1", "TecIndex": 8 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
-                'Tracer': {"Var": "tr1", "TecIndex": 29 - 3, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer_study': {"Var": "tr1", "TecIndex": 8 - 4, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
+                'Tracer': {"Var": "tr1", "TecIndex": 29 - 4, "State" : "Dissolved", "Location" : "Mobile", "Graphname" : 'Tracer'},
                 }
     
     return mastervariabledict

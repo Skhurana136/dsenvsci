@@ -2189,7 +2189,7 @@ def plotoxiccellssdo(
     )
     count = 0
     for j in Trial:
-        df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(
+        df, massendtime, masstime, conctime, Velocity, head = conc_time(
             j,
             Het[Trial.index(j)],
             Anis[Trial.index(j)],

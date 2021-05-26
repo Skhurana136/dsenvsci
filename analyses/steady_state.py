@@ -77,12 +77,10 @@ def massflux(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
             cinlet = 0
             coutlet = 0
             for c in list(mobilespecies + ["DOC"]):
-                cinlet = cinlet
-                +(df[species[c]['TecIndex'], -1, yin, xleft]*satiledg*veliledg*vedge
-                +df[species[c]['TecIndex'], -1, yin, xright]*satiredg*veliredg*vedge
-                +np.sum(df[species[c]['TecIndex'], -1, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1,))/por                    
-                coutlet = coutlet
-                +(df[species[c]['TecIndex'], -1, yout, xleft]*satoledg*veloledg*vedge+
+                cinlet = cinlet+(df[species[c]['TecIndex'], -1, yin, xleft]*satiledg*veliledg*vedge+
+                df[species[c]['TecIndex'], -1, yin, xright]*satiredg*veliredg*vedge+
+                np.sum(df[species[c]['TecIndex'], -1, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1,))/por                    
+                coutlet = coutlet+(df[species[c]['TecIndex'], -1, yout, xleft]*satoledg*veloledg*vedge+
                  df[species[c]['TecIndex'], -1, yout, xright]*satoredg*veloredg*vedge+
                  np.sum(df[species[c]['TecIndex'], -1, yout, xleft + 1 : xright]*satoelem*veloelem*velem,axis=-1,))/por
             massfluxin[idx] = cinlet
