@@ -7,14 +7,10 @@ Created on Fri Apr 10 16:55:52 2020
 import numpy as np
 from analyses.transient import conc_time
 
-def massflux(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
+def massflux(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime, vedge, velem, por):
     import data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State']!= "Dissolved"))
-    
-    vedge = 0.005
-    velem = 0.01
-    por = 0.2
     
     massfluxin = np.zeros([len(gvarnames)])
     massfluxout = np.zeros([len(gvarnames)])
@@ -141,10 +137,96 @@ def sum_biomass(data,yin,yout,xleft,xright,gvarnames,flowregime):
                     + sum(sum(df[species[g]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]*satelem))*velem**2)*por/vbc
     return sumall
 
+def chem_stock(data,yin,yout,xleft,xright,gvarnames,flowregime, vedge, velem, por):
+    import data_reader.data_processing as proc
+    species = proc.speciesdict(flowregime)
+    mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State']!= "Dissolved"))
+
+    species = proc.speciesdict(flowregime)
+
+    df = data
+    stock_domain = np.zeros([len(gvarnames)])
+    if flowregime == "Saturated":
+        satielem = 1
+        satoelem = 1
+        satlelem = 1
+        satrelem = 1
+        satiredg = 1
+        satiledg = 1
+        satoledg = 1
+        satoredg = 1
+        satelem = 1
+    else:
+        def effsat(data):
+            slope = 1/(0.8-0.2)
+            constant = -1/3
+            sat = slope*data + constant
+            return sat
+        satiredg = effsat(df[4, -1, yin, xright])
+        satiledg = effsat(df[4, -1, yin, xleft])
+        satoredg = effsat(df[4, -1, yout, xright])
+        satoledg = effsat(df[4, -1, yout, xleft])
+        satoelem = effsat(df[4, -1, yout, xleft + 1 : xright])
+        satielem = effsat(df[4, -1, yin, xleft + 1 : xright])
+        satlelem = effsat(df[4, -1, yin + 1 : yout, xleft])
+        satrelem = effsat(df[4, -1, yin + 1 : yout, xright])
+        satelem = effsat(df[4, -1, yin + 1 : yout, xleft + 1 : xright])
+    for g in gvarnames:
+        idx = gvarnames.index(g)
+        if g == "Nitrogen":
+            Nspecies = mobilespecies
+            n_microbes = 0
+            for n in Nspecies:
+                n_microbes = n_microbes+(((df[species[n]['TecIndex'], -1, yin, xleft]*satiledg
+                                   + df[species[n]['TecIndex'], -1, yout, xleft]*satoledg
+                                   + df[species[n]['TecIndex'], -1, yin, xright]*satiredg
+                                   + df[species[n]['TecIndex'], -1, yout, xright]*satoredg)*vedge**2
+                                  + (sum(df[species[n]['TecIndex'],-1,yin,xleft + 1 : xright]*satielem)
+                                     + sum(df[species[n]['TecIndex'],-1,yout,xleft + 1 : xright]*satoelem)
+                                     + sum(df[species[n]['TecIndex'], -1, yin + 1 : yout, xleft]*satlelem)
+                                     + sum(df[species[n]['TecIndex'], -1, yin + 1 : yout, xright]*satrelem))*vedge*velem)
+                                 + sum(sum(df[species[n]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]*satelem))*velem**2)*por
+            pure_n = 0
+            for r in ["Ammonium", "Nitrate"]:                            
+                pure_n = pure_n + (((df[species[r]['TecIndex'], -1, yin, xleft]*satiledg
+                                   + df[species[r]['TecIndex'], -1, yout, xleft]*satoledg
+                                   + df[species[r]['TecIndex'], -1, yin, xright]*satiredg
+                                   + df[species[r]['TecIndex'], -1, yout, xright]*satoredg)*vedge**2
+                                  + (sum(df[species[r]['TecIndex'],-1,yin,xleft + 1 : xright]*satielem)
+                                     + sum(df[species[r]['TecIndex'],-1,yout,xleft + 1 : xright]*satoelem)
+                                     + sum(df[species[r]['TecIndex'], -1, yin + 1 : yout, xleft]*satlelem)
+                                     + sum(df[species[r]['TecIndex'], -1, yin + 1 : yout, xright]*satrelem))*vedge*velem)
+                                 + sum(sum(df[species[r]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]*satelem))*velem**2)*por
+            stock_domain[idx] = n_microbes/10 + pure_n
+        elif g == "TOC":
+            c_domain = 0
+            for c in list(mobilespecies + ["DOC"]):
+                c_domain = c_domain+(((df[species[c]['TecIndex'], -1, yin, xleft]*satiledg
+                                   + df[species[c]['TecIndex'], -1, yout, xleft]*satoledg
+                                   + df[species[c]['TecIndex'], -1, yin, xright]*satiredg
+                                   + df[species[c]['TecIndex'], -1, yout, xright]*satoredg)*vedge**2
+                                  + (sum(df[species[c]['TecIndex'],-1,yin,xleft + 1 : xright]*satielem)
+                                     + sum(df[species[c]['TecIndex'],-1,yout,xleft + 1 : xright]*satoelem)
+                                     + sum(df[species[c]['TecIndex'], -1, yin + 1 : yout, xleft]*satlelem)
+                                     + sum(df[species[c]['TecIndex'], -1, yin + 1 : yout, xright]*satrelem))*vedge*velem)
+                                 + sum(sum(df[species[c]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]*satelem))*velem**2)*por
+            stock_domain[idx] = c_domain
+        else:
+            stock_domain[idx] = (((df[species[g]['TecIndex'], -1, yin, xleft]*satiledg
+                                   + df[species[g]['TecIndex'], -1, yout, xleft]*satoledg
+                                   + df[species[g]['TecIndex'], -1, yin, xright]*satiredg
+                                   + df[species[g]['TecIndex'], -1, yout, xright]*satoredg)*vedge**2
+                                  + (sum(df[species[g]['TecIndex'],-1,yin,xleft + 1 : xright]*satielem)
+                                     + sum(df[species[g]['TecIndex'],-1,yout,xleft + 1 : xright]*satoelem)
+                                     + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xleft]*satlelem)
+                                     + sum(df[species[g]['TecIndex'], -1, yin + 1 : yout, xright]*satrelem))*vedge*velem)
+                                 + sum(sum(df[species[g]['TecIndex'],-1,yin + 1 : yout,xleft + 1 : xright]*satelem))*velem**2)*por
+    return stock_domain
+
 def oxiccells(limit,Trial,Het,Anis,gw,d,fpre,fsuf,yin,yout,xleft,xright,vars,gvarnames):
     oxiccells = np.zeros([len(Trial), 51, 1])
     for j in range(len(Trial)):
-        df, massendtime, masstime, conctime, Velocity, head = calcconcmasstime(Trial[j],Het[j],Anis[j],
+        df, massendtime, masstime, conctime, Velocity, head = conc_time(Trial[j],Het[j],Anis[j],
             gw,d,fpre,fsuf,yin,yout,xleft,xright,vars,gvarnames)
         c = []
         for k in range(51):
