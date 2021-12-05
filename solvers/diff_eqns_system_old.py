@@ -4,26 +4,20 @@ Created on Mon Nov 29 2021
 """
 
 """
-# %%
 ## Import libraries
 from scipy.integrate import odeint
 import numpy as np
-import matplotlib.pyplot as plt
-#%%
-c_mol_bio = 10 #carbon atoms in microbial necromass
-## CONSOLIDATE SAMPLED PARAMETERS
-def call_constants():
-    params = [vparams, kparams, yparams, mparams]
-    return params
 
-def rates(x,t, c_n, b_n):
+from cfg import *
+
+def rates(x,c_n, b_n):
     
     # constants
-    params = call_constants()
+    #params, num_para_sets = call_constants()
     v_params = params[0]
-    k_params = params[1]
-    y_params = params[2]
-    m_params = params[3]
+    k_params = params[num_para_sets-3]
+    y_params = params[num_para_sets-2]
+    m_params = params[num_para_sets-1]
 
     # assign each ODE to array elements
     C = x[:c_n]
@@ -49,7 +43,7 @@ def rates(x,t, c_n, b_n):
     # 5. Complex DOM species added to simpler DOM species pools
     # formula to implement for all C
     # locate and order the C in decreasing order of simplicity
-    simple_C = np.argsort(np.mean(kparams.reshape(dom_n, bio_n), axis=1))
+    simple_C = np.argsort(np.mean(k_params.reshape(c_n, b_n), axis=1))
     # Add non-absorbed C fraction (not used for growth) into recycling fraction
     # r = (1-y)*rate of respiration which will be unique for each B,C combination
     C_recycle = (1-y_params)*r_resp
@@ -86,6 +80,12 @@ def rates(x,t, c_n, b_n):
     all_rates = np.append(C_rate, B_rate, axis = 0)
     return all_rates
 
+def solve_network (rate_eqns, initial_conditions, time_space, other_args):
+    # solve
+    answer = odeint(rate_eqns, initial_conditions, time_space, args=other_args)
+
+    return answer
+
 def divers_carbon (data, c_n, b_n):
     C = data[:,:c_n]
     B = data[:,c_n:]
@@ -96,52 +96,4 @@ def divers_carbon (data, c_n, b_n):
     total_C_stock = np.sum(C,axis=1) + np.sum(B, axis=1)
     C_stock = np.sum(C,axis=1)
 
-
     return Shannon, C_stock, total_C_stock
-
-#%%
-## CONSTANTS SAMPLING
-#
-# Number of DOM/Carbon species:
-
-dom_n = np.random.randint(4,10,1)[0]
-bio_n = np.random.randint(2,10,1)[0]
-print("Carbon species: ", dom_n)
-print("Biomass species: ", bio_n)
-# Initialize the same number of parameters:
-
-vparams = np.random.uniform(0.2,10,bio_n*dom_n)
-kparams = np.random.randint(1000,8000,bio_n*dom_n)
-yparams = np.random.uniform(0.1,0.99,bio_n)
-mparams = np.mean(vparams.reshape(dom_n, bio_n),axis=0)/10
-
-# initial conditions
-dom_initial = np.random.randint(500,1000,dom_n)
-biomass_initial = np.random.randint(10,100,bio_n)
-x0 = np.append(dom_initial,biomass_initial)
-
-# declare a time vector (time window)
-t = np.arange(0,500,0.01)
-# solve
-x = odeint(rates, x0, t, args=(dom_n,bio_n))#, full_output=1)
-
-S, DOC, TOC = divers_carbon(x, dom_n, bio_n)
-
-## PLOT RESULTS
-
-# Time series of DOM concentration profile with biomass concnetration profile
-C = x[:,:dom_n]
-B = x[:,dom_n:]
-plt.plot(t,C, linestyle = "-", label = "DOM")
-plt.plot(t,B, linestyle = "--", label = "Biomass")
-#plt.legend()
-# Shannon diversity vs carbon stock
-plt.figure()
-plt.scatter(S, DOC)
-plt.xlabel ("Shannon")
-plt.ylabel ("DOC")
-
-plt.figure()
-plt.scatter(S, TOC)
-plt.xlabel ("Shannon")
-plt.ylabel ("TOC")
