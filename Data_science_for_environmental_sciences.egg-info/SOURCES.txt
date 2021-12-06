@@ -1,0 +1,6 @@
+setup.py
+DS/__init__.py
+Data_science_for_environmental_sciences.egg-info/PKG-INFO
+Data_science_for_environmental_sciences.egg-info/SOURCES.txt
+Data_science_for_environmental_sciences.egg-info/dependency_links.txt
+Data_science_for_environmental_sciences.egg-info/top_level.txt
