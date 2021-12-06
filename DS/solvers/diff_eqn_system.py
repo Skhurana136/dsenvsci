@@ -212,20 +212,20 @@ class ReactionNetwork(object):
 
         return self.initial_guess#, self.answer
 
-    def diversity_carbon (self):
+def diversity_carbon (data, c_n, b_n):
 
-        """Method to evaluate the Shannon diversity and
-        carbon stock in the domain.
+    """Method to evaluate the Shannon diversity and
+    carbon stock in the domain.
 
-        """
+    """
 
-        C = self.initial_guess[:,:self.c_n]
-        B = self.initial_guess[:,self.c_n:]
-        
-        ## SHANNON DIVERSITY AND CARBON STOCK
-        proportion = B/np.sum(B,axis=0)
-        Shannon = -np.sum(proportion*np.log(proportion), axis = 1)
-        total_C_stock = np.sum(C,axis=1) + np.sum(B, axis=1)
-        C_stock = np.sum(C,axis=1)
+    C = data[:,:c_n]
+    B = data[:,c_n:]
+    
+    ## SHANNON DIVERSITY AND CARBON STOCK
+    proportion = B/np.sum(B,axis=0)
+    Shannon = -np.sum(proportion*np.log(proportion), axis = 1)
+    total_C_stock = np.sum(C,axis=1) + np.sum(B, axis=1)
+    C_stock = np.sum(C,axis=1)
 
-        return Shannon, C_stock, total_C_stock
+    return Shannon, C_stock, total_C_stock
