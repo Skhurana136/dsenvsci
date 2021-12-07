@@ -24,7 +24,6 @@ class ReactionNetwork(object):
     """Class to define general information on the reaction network solver, such as
     rate constants, rate expressions."""
 
-    @classmethod
     def __init__(self,
         maximum_capacity = 300,
         carbon_mol_bio = 10,
