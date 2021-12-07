@@ -253,6 +253,9 @@ def diversity_carbon (data, carbon_num, bio_num):
     
     Parameter
     ---------
+    data : Array, float.
+        Array of concentration of concentration of carbon and biomass species.
+        Each column is a different species. Each row is a new time point.
     carbon_num : int.
         Number of carbon species. Default value is 1.
     bio_num : int.
@@ -277,6 +280,9 @@ def normalize_carbon (data, carbon_num, bio_num, carbon_initial, biomass_initial
     
     Parameter
     ---------
+    data : Array, float.
+        Array of concentration of concentration of carbon and biomass species.
+        Each column is a different species. Each row is a new time point.
     carbon_num : int.
         Number of carbon species. Default value is 1.
     bio_num : int.
