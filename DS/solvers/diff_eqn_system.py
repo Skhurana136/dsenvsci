@@ -60,7 +60,6 @@ class ReactionNetwork(object):
         self.c_bc = carbon_input
         self.st = sigmoid_coeff_stolpovsky
         
-    #@classmethod
     def set_rate_constants(self, *user_input):
         """Method to assign constants to pass to other functions.
         
@@ -79,7 +78,6 @@ class ReactionNetwork(object):
         self.para_size = len(self.parameters)
         print("Reaction network constants have been defined")
     
-    #@classmethod
     def solve_network (self, initial_conditions, time_space):
         """Method to set up the reaction network given the 
         number of dissolved organic matter species and microbial
@@ -101,7 +99,6 @@ class ReactionNetwork(object):
             """
     
             # constants
-            #params, num_para_sets = call_constants()
             v_params = self.parameters[0]
             k_params = self.parameters[self.para_size-3]
             y_params = self.parameters[self.para_size-2]
