@@ -121,7 +121,7 @@ class ReactionNetwork(object):
             # 3. mortality
             # formula to implement for all B
             # r = m*B
-            r_mort = m_params*B
+            r_mort = m_params*r_growth
             # 4. dead microbes back to C (distributed evenly across all C)
             # formula to implement for all dying B and add it to C
             # r = sum of dying biomass
@@ -201,8 +201,8 @@ class ReactionNetwork(object):
 
         # solve
         self.initial_guess = odeint (rate_expressions, initial_conditions, time_space)
-    
 
+        print ("Your initial value problem is now solved.")
         #self.answer = solve_bvp(lambda t, x: rate_expressions(t, x, self.c_n, self.b_n),
         #            lambda x_bc0, x_bc1: boundary_conditions(x_bc0, x_bc1, self.c_n, self.b_n), time_space, self.initial_guess.T)
 
