@@ -207,21 +207,3 @@ class ReactionNetwork(object):
         #            lambda x_bc0, x_bc1: boundary_conditions(x_bc0, x_bc1, self.c_n, self.b_n), time_space, self.initial_guess.T)
 
         return self.initial_guess#, self.answer
-
-def diversity_carbon (data, c_n, b_n):
-
-    """Method to evaluate the Shannon diversity and
-    carbon stock in the domain.
-
-    """
-
-    C = data[:,:c_n]
-    B = data[:,c_n:]
-    
-    ## SHANNON DIVERSITY AND CARBON STOCK
-    proportion = B/np.sum(B,axis=0)
-    Shannon = -np.sum(proportion*np.log(proportion), axis = 1)
-    total_C_stock = np.sum(C,axis=1) + np.sum(B, axis=1)
-    C_stock = np.sum(C,axis=1)
-
-    return Shannon, C_stock, total_C_stock
