@@ -12,8 +12,8 @@ import seaborn as sns
 from datetime import datetime
 import matplotlib.patches as mpatches
 import matplotlib as mpl
-from analyses.transient import conc_time, biomass_time
-from data_reader.data_processing import localmaxmin
+from DS.analyses.transient import conc_time, biomass_time
+from DS.data_reader.data_processing import localmaxmin
 
 Regimes = ["Slow", "Medium", "Fast"]
 Redscmap = mpl.cm.Reds(np.linspace(0, 1, 30))
