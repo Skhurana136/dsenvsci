@@ -18,7 +18,7 @@ about the reaction network solver
 """ 
 import numpy as np
 
-from scipy.integrate import odeint, solve_bvp
+from scipy.integrate import solve_ivp, solve_bvp
 
 class ReactionNetwork(object):
     """Class to define general information on the reaction network solver, such as
@@ -28,9 +28,13 @@ class ReactionNetwork(object):
         maximum_capacity = 300,
         carbon_mol_bio = 10,
         carbon_num = 1,
-        bio_num = 1,
+        bio_num = 3,
+        fungal_num = 2,
         carbon_input = 0,
         sigmoid_coeff_stolpovsky = 0.1,
+        necromass_distribution = "equally",
+        enzyme_production_rate_constant = 0.7,
+        efficiency_bio_uptake = 0.5,
         ):
 
         """Method to assign constants for the entire system.
@@ -46,19 +50,32 @@ class ReactionNetwork(object):
         carbon_num : int.
             Number of carbon species. Default value is 1.
         bio_num : int.
-            Number of microbial species. Default value is 1.
+            Number of mediators of carbon transformation in the system. Default value is 3.
+        fungal_num : int.
+            Number of fungal species. Default value is 2.
         carbon_input : float.
             Continuous addition of carbon to the most complex carbon pool. Default is 0, implying a closed system.
         sigmoid_coeff_stolpovsky : float.
             Coefficient to use in adapted sigmoid curve (see Stolpovsky et al., 2011). Can vary from 0.01 to 0.1.
+        necromass_distribution : string.
+            Switch to specify if bacteria necromass distributes evenly among all carbon pools or
+            "mid-labile" carbon pools. Default option is equal distribution among all carbon pools.
+        enzyme_production_rate_constant : float.
+            First order rate constant for production of extracellular enzymes by fungi. Default value is 0.7
+        efficiency_bio_uptake : float.
+            Fraction of depolymerized carbon pool that is used for microbial uptake (respiration + growth). Default value is 0.5.
         """
         
         self.max_cap = maximum_capacity
         self.c_mol_bio = carbon_mol_bio
         self.c_n = carbon_num
+        self.f_n = fungal_num
         self.b_n = bio_num
         self.c_bc = carbon_input
         self.st = sigmoid_coeff_stolpovsky
+        self.necromass_loop = necromass_distribution
+        self.v_enz = enzyme_production_rate_constant
+        self.z = efficiency_bio_uptake
         
     def set_rate_constants(self, *user_input):
         """Method to assign constants to pass to other functions.
@@ -77,8 +94,43 @@ class ReactionNetwork(object):
         self.parameters = list(l for l in user_input)
         self.para_size = len(self.parameters)
         print("Reaction network constants have been defined")
+
+    def identify_components_natures(self):
+        """Function to categorize the components of the reaction network.
+        What is most recalcitrant (least labile) carbon pool?
+        Which microbial species are fungi and the rest bacteria?
+        
+        Parameter
+        ---------
+
+        """
+        
+        # constants
+        self.v_params = self.parameters[0].reshape(self.c_n, self.b_n)
+        self.k_params = self.parameters[self.para_size-3].reshape(self.c_n, self.b_n)
+        self.y_params = self.parameters[self.para_size-2]
+        self.m_params = self.parameters[self.para_size-1]
+        self.lim_k_params = self.k_params/100
+
+        self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
+        self.most_labile_c = self.labile_c[0]
+        self.least_labile_c = self.labile_c[-1]
+        self.middle_labile_group = self.labile_c[1:]
+        
+        ### Holding of the identification of fungal and bacterial groups for now
+        # identify fungal groups in microbial biomass
+        # top microbial species that are able to break down least_labile_c
+        # activity_b = np.argsort(self.k_params[self.least_labile_c,:])
+        #increasing order of k_params, so increasing order of resistance to use that C compound
+        # self.fungi = activity_b[:2]
+        # self.bacteria = activity_b[2:]
+
+        print ("Most recalcitrant carbon pool is : ", self.least_labile_c)
+        print ("Most labile carbon pool is : ", self.most_labile_c)
+        #print ("Fungi pools are :", self.fungi)
+        #print ("Bacteria pools are : ", self.bacteria)
     
-    def solve_network (self, initial_conditions, time_space):
+    def solve_network (self, initial_conditions, time_span, time_space):
         """Method to set up the reaction network given the 
         number of dissolved organic matter species and microbial
         species.
@@ -92,84 +144,75 @@ class ReactionNetwork(object):
             Array of time points to solve the system of ODEs.
         """
 
-        def rate_expressions(x , t):
+        def rate_expressions(t, x):
             """Function to set up the reaction network given the 
             number of dissolved organic matter species and microbial
             species.
             """
     
-            # constants
-            v_params = self.parameters[0]
-            k_params = self.parameters[self.para_size-3]
-            y_params = self.parameters[self.para_size-2]
-            m_params = self.parameters[self.para_size-1]
-            lim_k_params = k_params/50
-
             # assign each ODE to array elements
             C = x[:self.c_n]
             B = x[self.c_n:]
 
             # define rates for:
-            # 1. respiration
+            # 1. Production of exoenzymes to depolymerize labile C
+            exoenzyme = self.v_enz * B
+            
+            # 2. Depolymerization of all C by exoenzymes
+            c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + C[...,None])
+            
+            # 3. Respiration
             # formula to implement for all B,C combinations:
-            # r = v*B*C/(k+C). v,k are unique to each B,C combination
-            r_resp = v_params.reshape(self.c_n,self.b_n)*np.multiply(B,C[...,None])/(k_params.reshape(self.c_n, self.b_n)+C[...,None])
-            # 2. growth
+            b_uptake = self.z * c_depoly
+            
+            # 4. Growth
             # formula to implement for all B
             # r = y* rate of respiration for each B for all C
-            r_growth = y_params*np.sum(r_resp/np.exp((1-(r_resp/(lim_k_params.reshape(self.c_n, self.b_n)*B)))/self.st),axis=0)
-            # 3. mortality
+            b_growth = self.y_params * b_uptake
+            
+            # 5. mortality
             # formula to implement for all B
             # r = m*B
-            r_mort = m_params*r_growth
-            # 4. dead microbes back to C (distributed evenly across all C)
+            b_mort = self.m_params*np.sqrt(B)
+            
+            # 6. dead microbes back to C (distributed evenly across all C)
+            
             # formula to implement for all dying B and add it to C
             # r = sum of dying biomass
-            r_hydrol = sum(r_mort)/self.c_n
-            # 5. Complex DOM species added to simpler DOM species pools
-            # formula to implement for all C
-            # locate and order the C in increasing order of complexity (ascending k_params)
-            simple_C = np.argsort(np.mean(k_params.reshape(self.c_n, self.b_n), axis=1))
-            # Add non-absorbed C fraction (not used for growth) into recycling fraction
-            # r = (1-y)*rate of respiration which will be unique for each B,C combination
-            C_recycle = r_resp - r_growth#(1-y_params)*np.sum(r_resp/np.exp((1-(r_resp/(lim_k_params.reshape(self.c_n, self.b_n)*B)))/self.st),axis=0)#(1-y_params)*r_resp
+            b_necromass = np.sum(b_mort)
+            
+            # 7. Labile DOM species added to less labile DOM species pools
+            # Add non-absorbed C fraction (not used for microbial uptake) into recycling fraction
             # In the end we are interested in the bulk unused C product to recycle it to other C pools:
             # r = sum(recycled pool for each C)
-            C_recycle = np.sum(C_recycle, axis = 1)
+            c_recycle = np.sum((1-self.z) * c_depoly, axis = 1)
 
             # define each ODE
+            C_rate = np.empty((self.c_n,0))
+            B_rate = np.empty((self.b_n,0))
+
             # 1. rate of change of carbon species concentration
-            C_rate = -1*np.sum(r_resp, axis = 1) + r_hydrol
+            # reduction in concentration of carbon due to depolymerization and microbial uptake
+            C_rate = -1*np.sum(c_depoly,axis=1) #- 1*np.sum(b_uptake, axis = 1)
+
+            # Add bacteria necromass to carbon pools
+            if self.necromass_loop == "equally":
+                C_rate += b_necromass/self.c_n
+            else:
+                C_rate[self.middle_labile_group] += b_necromass/(self.middle_labile_group.size)
+
             # add sequence of addition to the simpler carbon compounds
-            for ind in list(range(np.size(simple_C))):
-                if ind < np.size(simple_C)-1: # No action to be taken for the most complex compound
-                    # identify the index in C_rate for the simple C compound
-                    simp_c_ind = simple_C[ind] 
-                    # identify the next level complex compound and its index
-                    comp_c_ind = simple_C[ind-1]
-                    # Add the unused fraction of next level complex compound to the simpler C compound
-                    C_rate[simp_c_ind] += C_recycle[comp_c_ind]
-            # save microbial necromass into the carbon pool that is midway simple:
-            #mid_ind = simple_C[int(self.c_n/2)]
-            #C_rate[mid_ind] += r_hydrol
-            # add continuous input to the most complex carbon compound
-            C_rate[simple_C[-1]] += self.c_bc
+            for labile_c, less_labile_c in zip(self.labile_c[:-1], self.labile_c[1:]):
+                C_rate[labile_c] += c_recycle[less_labile_c]                
 
-            # 2. rate of change of biomass species concentration
+            C_rate[self.least_labile_c] += c_recycle[self.least_labile_c]
+
+            # add continuous input to the most labile carbon compound
+            C_rate += self.c_bc
+
+            # 8. rate of change of biomass species concentration
             # Biomsdd grows and dies
-            B_rate = r_growth - r_mort
-        
-            # Checking violation of conditions
-            # Check if concentration of carbon and biomass is tending to negative. If yes, reset it to 0.
-            C_bad_ind = np.where(C<=0)
-            B_bad_ind = np.where(B<=0)
-            C_rate[C_bad_ind] = 0
-            B_rate[B_bad_ind] = 0
-
-            # Check if biomass is exceeding maximum capacity.
-            # If yes, reset to maximum capacity and stop changing biomass.
-            B_bad_ind = np.where(np.sum(B)>self.max_cap)
-            B_rate[B_bad_ind] = 0
+            B_rate = np.sum(b_growth, axis = 0) - b_mort
 
             rates = np.append(C_rate, B_rate, axis = 0)
 
@@ -177,33 +220,34 @@ class ReactionNetwork(object):
         
         ### WIP
         ## Defining boundary conditions/input conditions. This is not working right now.
-        def boundary_conditions(x_bc0, x_bc1):
-            """Method to set up the boundary conditions given the 
-            time point and values.
-            
-            Parameter
-            ---------
-            x_bc0, x_bc1 : Array, float.
-                x_bc0 : Boundary conditions 1.
-                x_bc1 : Boundary conditions 2.
-            """
-            # Values at t=0:
-            x_bc0[:self.c_n] = np.ones(self.c_n)*5
-            x_bc0[self.c_n:] = np.ones(self.b_n)*1
-
-            # Values at t=0:
-            x_bc1[:self.c_n] = np.ones(self.c_n)*10
-            x_bc1[self.c_n:] = np.ones(self.b_n)*5
-
-            # These return values are what we want to be 0:
-            return [x_bc0, x_bc1]
+        #def boundary_conditions(x_bc0, x_bc1):
+        #    """Method to set up the boundary conditions given the 
+        #    time point and values.
+        #    
+        #    Parameter
+        #    ---------
+        #    x_bc0, x_bc1 : Array, float.
+        #        x_bc0 : Boundary conditions 1.
+        #        x_bc1 : Boundary conditions 2.
+        #    """
+        #    # Values at t=0:
+        #    x_bc0[:self.c_n] = np.ones(self.c_n)*5
+        #    x_bc0[self.c_n:] = np.ones(self.b_n)*1
+        #
+        #    # Values at t=0:
+        #    x_bc1[:self.c_n] = np.ones(self.c_n)*10
+        #    x_bc1[self.c_n:] = np.ones(self.b_n)*5
+        #
+        #    # These return values are what we want to be 0:
+        #    return [x_bc0, x_bc1]
         ### End of WIP
 
         # solve
-        self.initial_guess = odeint (rate_expressions, initial_conditions, time_space)
+        #(self.initial_guess, d) = odeint (rate_expressions, initial_conditions, time_space, full_output=True)
+        self.initial_guess = solve_ivp (rate_expressions, time_span, initial_conditions, t_eval = time_space, rtol = 1e-12, atol = 1e-12)
 
         print ("Your initial value problem is now solved.")
         #self.answer = solve_bvp(lambda t, x: rate_expressions(t, x, self.c_n, self.b_n),
         #            lambda x_bc0, x_bc1: boundary_conditions(x_bc0, x_bc1, self.c_n, self.b_n), time_space, self.initial_guess.T)
 
-        return self.initial_guess#, self.answer
+        return self.initial_guess
