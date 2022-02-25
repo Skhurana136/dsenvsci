@@ -9,13 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 
-def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime):
-    import data_reader.data_processing as proc
+def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, element_length = 0.01, edge_length = 0.005, gvarnames,flowregime):
+    import DS.data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
-
-    vedge = 0.005
-    velem = 0.01
 
     df = numpyarray
     
@@ -62,63 +59,63 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
            noutlet = 0
            for n in Nspecies:
                ninlet = ninlet + (
-                   df[species[n]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
-                   + df[species[n]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                   df[species[n]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * edge_length
+                   + df[species[n]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * edge_length
                    + np.sum(
                        df[species[n]['TecIndex'], 1:, yin, xleft + 1 : xright]
                        * satielem
                        * velielem
-                       * velem,
+                       * element_length,
                        axis=-1,
                    )
                ) / (
-                   vedge * (veliredg + veliledg)
-                   + np.sum(velem * velielem, axis=-1)
+                   edge_length * (veliredg + veliledg)
+                   + np.sum(element_length * velielem, axis=-1)
                )
                noutlet = noutlet + (
-                   df[species[n]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
-                   + df[species[n]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                   df[species[n]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * edge_length
+                   + df[species[n]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * edge_length
                    + np.sum(
                        df[species[n]['TecIndex'], 1:, yout, xleft + 1 : xright]
                        * satoelem
                        * veloelem
-                       * velem,
+                       * element_length,
                        axis=-1,
                    )
                    ) / (
-                   vedge * (veloredg + veloledg)
-                   + np.sum(velem * veloelem, axis=-1)
+                   edge_length * (veloredg + veloledg)
+                   + np.sum(element_length * veloelem, axis=-1)
                )
            sumin = 0
            sumout = 0
            for r in ["Ammonium", "Nitrate"]:
                sumin = sumin + (
-                   df[species[r]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
-                   + df[species[r]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                   df[species[r]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * edge_length
+                   + df[species[r]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * edge_length
                    + np.sum(
                        df[species[r]['TecIndex'], 1:, yin, xleft + 1 : xright]
                        * satielem
                        * velielem
-                       * velem,
+                       * element_length,
                        axis=-1,
                    )
                ) / (
-                   vedge * (veliredg + veliledg)
-                   + np.sum(velem * velielem, axis=-1)
+                   edge_length * (veliredg + veliledg)
+                   + np.sum(element_length * velielem, axis=-1)
                )
                sumout = sumout + (
-                   df[species[r]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
-                   + df[species[r]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                   df[species[r]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * edge_length
+                   + df[species[r]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * edge_length
                    + np.sum(
                        df[species[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
                        * satoelem
                        * veloelem
-                       * velem,
+                       * element_length,
                        axis=-1,
                    )
                    ) / (
-                   vedge * (veloredg + veloledg)
-                   + np.sum(velem * veloelem, axis=-1))
+                   edge_length * (veloredg + veloledg)
+                   + np.sum(element_length * veloelem, axis=-1))
             
            conctime[1:, yin, idx] = ninlet / 10 + sumin
            conctime[1:, yout, idx] = noutlet / 10 + sumout  
@@ -127,27 +124,27 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
            coutlet = 0
            for c in list(mobilespecies + ["DOC"]):
                cinlet = cinlet + (
-                       df[species[c]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * vedge
-                       + df[species[c]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * vedge
+                       df[species[c]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg * edge_length
+                       + df[species[c]['TecIndex'], 1:, yin, xright] * satiredg * veliredg * edge_length
                        + np.sum(
                         df[species[c]['TecIndex'], 1:, yin, xleft + 1 : xright]
                         * satielem
                         * velielem
-                        * velem,
-                        axis=-1)) / (vedge * (veliredg + veliledg)+ np.sum(velem * velielem, axis=-1))
+                        * element_length,
+                        axis=-1)) / (edge_length * (veliredg + veliledg)+ np.sum(element_length * velielem, axis=-1))
                coutlet = coutlet + (
-                    df[species[c]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * vedge
-                    + df[species[c]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * vedge
+                    df[species[c]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg * edge_length
+                    + df[species[c]['TecIndex'], 1:, yout, xright] * satoredg * veloredg * edge_length
                     + np.sum(
                         df[species[c]['TecIndex'], 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
                 ) / (
-                    vedge * (veloredg + veloledg)
-                    + np.sum(velem * veloelem, axis=-1)
+                    edge_length * (veloredg + veloledg)
+                    + np.sum(element_length * veloelem, axis=-1)
                 )
            conctime[1:, yin, idx] = cinlet
            conctime[1:, yout, idx] = coutlet
@@ -157,17 +154,17 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
                         df[species[i]['TecIndex'], 1:, yin, xleft] * satiledg * veliledg
                         + df[species[i]['TecIndex'], 1:, yin, xright] * satiredg * veliredg
                     )
-                    * (vedge)
+                    * (edge_length)
                     + (np.sum(df[species[i]['TecIndex'], 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem,
-                            axis=-1))* velem) / (vedge * (veliredg*satiredg + veliledg*satiledg) + velem*np.sum(velielem*satielem, axis=-1))
+                            axis=-1))* element_length) / (edge_length * (veliredg*satiredg + veliledg*satiledg) + element_length*np.sum(velielem*satielem, axis=-1))
            conctime[1:, yout, idx] = (
                     (
                         df[species[i]['TecIndex'], 1:, yout, xleft] * satoledg * veloledg
                         + df[species[i]['TecIndex'], 1:, yout, xright] * satoredg * veloredg
                     )
-                    * (vedge)
+                    * (edge_length)
                     + (
                         np.sum(
                             df[species[i]['TecIndex'], 1:, yout, xleft + 1 : xright]
@@ -176,37 +173,36 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
                             axis=-1,
                         )
                     )
-                    * velem
-                ) / (vedge * (veloredg*satoredg + veloledg*satoledg) + np.sum(velem * veloelem*satoelem, axis=-1))
+                    * element_length
+                ) / (edge_length * (veloredg*satoredg + veloledg*satoledg) + np.sum(element_length * veloelem*satoelem, axis=-1))
            conctime[1:, yin + 1 : yout, idx] = (
                     np.sum(
                         df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                         * satelem
-                        * velem
+                        * element_length
                         * velelem,
                         axis=-1,
                     )
-                    + vedge*(df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem * vellelem
+                    + edge_length*(df[species[i]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem * vellelem
                         + df[species[i]['TecIndex'], 1:, yin + 1 : yout, xright]*satrelem*velrelem)
-                ) / (vedge * (vellelem*satlelem + velrelem*satrelem) + np.sum(velem * velelem*satelem, axis=-1))
+                ) / (edge_length * (vellelem*satlelem + velrelem*satrelem) + np.sum(element_length * velelem*satelem, axis=-1))
 
-    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * vedge + (
+    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * edge_length + (
         np.sum(vellelem)
         + np.sum(velrelem)
         + np.sum(velelem)
         + np.sum(velielem)
         + np.sum(veloelem)
-    ) * velem
+    ) * element_length
     
     Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
     
     return conctime, TotalFlow, Headinlettime
 
-def biomass_time(data, yin,yout,xleft,xright,gvarnames,flowregime):
+def biomass_time(data, yin,yout,xleft,xright,edge_length = 0.005, element_length = 0.01, gvarnames,flowregime):
     import data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
-    vedge = 0.005
-    velem = 0.01
+    
     por = 0.2
     vbc = 0.5 * 0.3
     df = data
@@ -241,14 +237,14 @@ def biomass_time(data, yin,yout,xleft,xright,gvarnames,flowregime):
         sumalltime[:, b] = ((df[species[g]['TecIndex'], 1:, yin, xleft] * satiledg
                     + df[species[g]['TecIndex'], 1:, yout, xleft] * satoledg
                     + df[species[g]['TecIndex'], 1:, yin, xright] * satiredg
-                    + df[species[g]['TecIndex'], 1:, yout, xright] * satoredg)* vedge**2
+                    + df[species[g]['TecIndex'], 1:, yout, xright] * satoredg)* edge_length**2
                 + (np.sum(df[species[g]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,axis=-1)
                     + np.sum(df[species[g]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,axis=-1)
                     + np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem,axis=-1)
                     + np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem,axis=-1)
-                    )* vedge * velem
+                    )* edge_length * element_length
             + np.sum(np.sum(df[species[g]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]* satelem, axis=-1),
-                     axis=-1)* velem**2)*por/vbc
+                     axis=-1)* element_length**2)*por/vbc
 
     return sumalltime
 
@@ -347,8 +343,8 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
     species = proc.speciesdict(flowregime)
     mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
 
-    vedge = 0.005
-    velem = 0.01
+    edge_length = 0.005
+    element_length = 0.01
     por = 0.2
     
     massfluxin = np.zeros([len(gvarnames)])
@@ -391,29 +387,29 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
             for n in mobilespecies:
                 ninlet = (
                         ninlet
-                        + (sum(df[species[n]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
-                            + sum(df[species[n]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
-                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por)
+                        + (sum(df[species[n]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*edge_length)
+                            + sum(df[species[n]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*edge_length)
+                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*element_length,axis=-1)))/por)
                 noutlet = (
                             noutlet
-                        + (sum(df[species[n]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
-                            + sum(df[species[n]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
-                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yout, xleft + 1 : xright]*satoelem*veloelem*velem,axis=-1)))/por)
+                        + (sum(df[species[n]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*edge_length)
+                            + sum(df[species[n]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*edge_length)
+                            + sum(np.sum(df[species[n]['TecIndex'], 1:, yout, xleft + 1 : xright]*satoelem*veloelem*element_length,axis=-1)))/por)
             sumin = 0
             sumout = 0
             for r in ["Ammonium", "Nitrate"]:                            
                 rin = (
-                        sum(df[species[r]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*vedge)
-                + sum(df[species[r]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*vedge)
-                + sum(np.sum(df[species[r]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*velem,axis=-1)))/por
+                        sum(df[species[r]['TecIndex'], 1:, yin, xleft]*satiledg*veliledg*edge_length)
+                + sum(df[species[r]['TecIndex'], 1:, yin, xright]*satiredg*veliredg*edge_length)
+                + sum(np.sum(df[species[r]['TecIndex'], 1:, yin, xleft + 1 : xright]*satielem*velielem*element_length,axis=-1)))/por
                 rout = (
-                        sum(df[species[r]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*vedge)
-                + sum(df[species[r]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*vedge)
+                        sum(df[species[r]['TecIndex'], 1:, yout, xleft]*satoledg*veloledg*edge_length)
+                + sum(df[species[r]['TecIndex'], 1:, yout, xright]*satoredg*veloredg*edge_length)
                 + sum(                            np.sum(
                         df[species[r]['TecIndex'], 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
-                        * velem,
+                        * element_length,
                         axis=-1,
                         )
                 )) / por
@@ -431,18 +427,18 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
                         sum(                            df[species[c]['TecIndex'], 1:, yin, xleft]
                             * satiledg
                             * veliledg
-                            * vedge
+                            * edge_length
                         )
                         + sum(                                df[species[c]['TecIndex'], 1:, yin, xright]
                                 * satiredg
                                 * veliredg
-                                * vedge
+                                * edge_length
                             )
                         + sum(                                np.sum(
                                     df[species[c]['TecIndex'], 1:, yin, xleft + 1 : xright]
                                     * satielem
                                     * velielem
-                                    * velem,
+                                    * element_length,
                                     axis=-1,
                                 )
                             )
@@ -455,18 +451,18 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
                         sum(                            df[species[c]['TecIndex'], 1:, yout, xleft]
                             * satoledg
                             * veloledg
-                            * vedge
+                            * edge_length
                             )
                         + sum(                                df[species[c]['TecIndex'], 1:, yout, xright]
                                 * satoredg
                                 * veloredg
-                                * vedge
+                                * edge_length
                             )
                         + sum(                                np.sum(
                                     df[species[c]['TecIndex'], 1:, yout, xleft + 1 : xright]
                                     * satoelem
                                     * veloelem
-                                    * velem,
+                                    * element_length,
                                     axis=-1,
                                 )
                             )
@@ -480,18 +476,18 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
                 sum(                        df[species[i]['TecIndex'], 1:, yin, xleft]
                         * satiledg
                         * veliledg
-                        * vedge
+                        * edge_length
                     )
                 + sum(                        df[species[i]['TecIndex'], 1:, yin, xright]
                         * satiredg
                         * veliredg
-                        * vedge
+                        * edge_length
                     )
                 + sum(                        np.sum(
                             df[species[i]['TecIndex'], 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem
-                            * velem,
+                            * element_length,
                             axis=-1,
                         )
                     )
@@ -499,17 +495,17 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
             massfluxout[idx] = (                    sum(                        df[species[i]['TecIndex'], 1:, yout, xleft]
                         * satoledg
                         * veloledg
-                        * vedge
+                        * edge_length
                     )
                     + sum(                        df[species[i]['TecIndex'], 1:, yout, xright]
                         * satoredg
                         * veloredg
-                        * vedge
+                        * edge_length
                     )
                     + sum(                        np.sum(                            df[species[i]['TecIndex'], 1:, yout, xleft + 1 : xright]
                             * satoelem
                             * veloelem
-                            * velem,
+                            * element_length,
                                 axis=-1,
                         )
                     )
@@ -519,8 +515,8 @@ def calcmft_temp(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime):
 def calcmassfluxtime(
     Trialhead, Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
 ):
-    vedge = 0.005
-    velem = 0.01
+    edge_length = 0.005
+    element_length = 0.01
     vbc = 0.3
     mft = np.ones([len(Trial) * len(vars), 8])
     dire = d + fpre + str(Trialhead)
@@ -567,31 +563,31 @@ def calcmassfluxtime(
             mft[idx, 2] = Anis[j]
             mft[idx, 3] = i
             mft[idx, 4] = (
-                sum(df[vars[i] - 3, 1:, yin, xleft] * satiledg * veliledg * vedge)
-                + sum(df[vars[i] - 3, 1:, yin, xright] * satiredg * veliredg * vedge)
+                sum(df[vars[i] - 3, 1:, yin, xleft] * satiledg * veliledg * edge_length)
+                + sum(df[vars[i] - 3, 1:, yin, xright] * satiredg * veliredg * edge_length)
                 + sum(
                     np.sum(
                         df[vars[i] - 3, 1:, yin, xleft + 1 : xright]
                         * satielem
                         * velielem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
                 )
-            ) / sum(np.sum(velielem * velem, axis=-1) + (veliledg + veliredg) * vedge)
+            ) / sum(np.sum(velielem * element_length, axis=-1) + (veliledg + veliredg) * edge_length)
             mft[idx, 5] = (
-                sum(df[vars[i] - 3, 1:, yout, xleft] * satoledg * veloledg * vedge)
-                + sum(df[vars[i] - 3, 1:, yout, xright] * satoredg * veloredg * vedge)
+                sum(df[vars[i] - 3, 1:, yout, xleft] * satoledg * veloledg * edge_length)
+                + sum(df[vars[i] - 3, 1:, yout, xright] * satoredg * veloredg * edge_length)
                 + sum(
                     np.sum(
                         df[vars[i] - 3, 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
                 )
-            ) / sum((np.sum(veloelem * velem, axis=-1) + (veloledg + veloredg) * vedge))
+            ) / sum((np.sum(veloelem * element_length, axis=-1) + (veloledg + veloredg) * edge_length))
             mft[idx, 6] = (mft[idx, 4] - mft[idx, 5]) / mft[idx, 4]
             mft[idx, 7] = (mft[idx, 6] - mft[i, 6]) / mft[i, 6]
     return mft
@@ -690,8 +686,8 @@ def calcconcmasstime(
     indices,
     gvarnames,
 ):
-    vedge = 0.005
-    velem = 0.01
+    edge_length = 0.005
+    element_length = 0.01
     vbc = 0.3
     por = 0.2
     doc1 = 10 - gw
@@ -741,125 +737,125 @@ def calcconcmasstime(
                 noutlet = 0
                 for n in Nspecies:
                     ninlet = ninlet + (
-                        df[n - 3, 1:, yin, xleft] * satiledg * veliledg * vedge
-                        + df[n - 3, 1:, yin, xright] * satiredg * veliredg * vedge
+                        df[n - 3, 1:, yin, xleft] * satiledg * veliledg * edge_length
+                        + df[n - 3, 1:, yin, xright] * satiredg * veliredg * edge_length
                         + np.sum(
                             df[n - 3, 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem
-                            * velem,
+                            * element_length,
                             axis=-1,
                         )
                     ) / (
-                        vedge * (veliredg + veliledg)
-                        + np.sum(velem * velielem, axis=-1)
+                        edge_length * (veliredg + veliledg)
+                        + np.sum(element_length * velielem, axis=-1)
                     )
                     noutlet = noutlet + (
-                        df[n - 3, 1:, yout, xleft] * satoledg * veloledg * vedge
-                        + df[n - 3, 1:, yout, xright] * satoredg * veloredg * vedge
+                        df[n - 3, 1:, yout, xleft] * satoledg * veloledg * edge_length
+                        + df[n - 3, 1:, yout, xright] * satoredg * veloredg * edge_length
                         + np.sum(
                             df[n - 3, 1:, yout, xleft + 1 : xright]
                             * satoelem
                             * veloelem
-                            * velem,
+                            * element_length,
                             axis=-1,
                         )
                     ) / (
-                        vedge * (veloredg + veloledg)
-                        + np.sum(velem * veloelem, axis=-1)
+                        edge_length * (veloredg + veloledg)
+                        + np.sum(element_length * veloelem, axis=-1)
                     )
                 conctime[1:, yin, i] = ninlet / 10 + (
-                    df[Amm1 - 3, 1:, yin, xleft] * satiledg * veliledg * vedge
-                    + df[Amm1 - 3, 1:, yin, xright] * satiredg * veliredg * vedge
+                    df[Amm1 - 3, 1:, yin, xleft] * satiledg * veliledg * edge_length
+                    + df[Amm1 - 3, 1:, yin, xright] * satiredg * veliredg * edge_length
                     + np.sum(
                         df[Amm1 - 3, 1:, yin, xleft + 1 : xright]
                         * satielem
                         * velielem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
-                    + df[nitra1 - 3, 1:, yin, xleft] * satiledg * veliledg * vedge
-                    + df[nitra1 - 3, 1:, yin, xright] * satiredg * veliredg * vedge
+                    + df[nitra1 - 3, 1:, yin, xleft] * satiledg * veliledg * edge_length
+                    + df[nitra1 - 3, 1:, yin, xright] * satiredg * veliredg * edge_length
                     + np.sum(
                         df[nitra1 - 3, 1:, yin, xleft + 1 : xright]
                         * satielem
                         * velielem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
-                ) / (vedge * (veliredg + veliledg) + np.sum(velem * velielem, axis=-1))
+                ) / (edge_length * (veliredg + veliledg) + np.sum(element_length * velielem, axis=-1))
                 conctime[1:, yout, i] = noutlet / 10 + (
-                    df[Amm1 - 3, 1:, yout, xleft] * satoledg * veloledg * vedge
-                    + df[Amm1 - 3, 1:, yout, xright] * satoredg * veloredg * vedge
+                    df[Amm1 - 3, 1:, yout, xleft] * satoledg * veloledg * edge_length
+                    + df[Amm1 - 3, 1:, yout, xright] * satoredg * veloredg * edge_length
                     + np.sum(
                         df[Amm1 - 3, 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
-                    + df[nitra1 - 3, 1:, yout, xleft] * satoledg * veloledg * vedge
-                    + df[nitra1 - 3, 1:, yout, xright] * satoredg * veloredg * vedge
+                    + df[nitra1 - 3, 1:, yout, xleft] * satoledg * veloledg * edge_length
+                    + df[nitra1 - 3, 1:, yout, xright] * satoredg * veloredg * edge_length
                     + np.sum(
                         df[nitra1 - 3, 1:, yout, xleft + 1 : xright]
                         * satoelem
                         * veloelem
-                        * velem,
+                        * element_length,
                         axis=-1,
                     )
-                ) / (vedge * (veloredg + veloledg) + np.sum(velem * veloelem, axis=-1))
+                ) / (edge_length * (veloredg + veloledg) + np.sum(element_length * veloelem, axis=-1))
             elif gvarnames[i] == "TOC":
                 cinlet = 0
                 coutlet = 0
                 for c in Cspecies:
                     cinlet = cinlet + (
-                        df[c - 3, 1:, yin, xleft] * satiledg * veliledg * vedge
-                        + df[c - 3, 1:, yin, xright] * satiredg * veliredg * vedge
+                        df[c - 3, 1:, yin, xleft] * satiledg * veliledg * edge_length
+                        + df[c - 3, 1:, yin, xright] * satiredg * veliredg * edge_length
                         + np.sum(
                             df[c - 3, 1:, yin, xleft + 1 : xright]
                             * satielem
                             * velielem
-                            * velem,
+                            * element_length,
                             axis=-1,
                         )
                     ) / (
-                        vedge * (veliredg + veliledg)
-                        + np.sum(velem * velielem, axis=-1)
+                        edge_length * (veliredg + veliledg)
+                        + np.sum(element_length * velielem, axis=-1)
                     )
                     coutlet = coutlet + (
-                        df[c - 3, 1:, yout, xleft] * satoledg * veloledg * vedge
-                        + df[c - 3, 1:, yout, xright] * satoredg * veloredg * vedge
+                        df[c - 3, 1:, yout, xleft] * satoledg * veloledg * edge_length
+                        + df[c - 3, 1:, yout, xright] * satoredg * veloredg * edge_length
                         + np.sum(
                             df[c - 3, 1:, yout, xleft + 1 : xright]
                             * satoelem
                             * veloelem
-                            * velem,
+                            * element_length,
                             axis=-1,
                         )
                     ) / (
-                        vedge * (veloredg + veloledg)
-                        + np.sum(velem * veloelem, axis=-1)
+                        edge_length * (veloredg + veloledg)
+                        + np.sum(element_length * veloelem, axis=-1)
                     )
                 conctime[
                     1:, yin, i
-                ] = cinlet  # /(sum(velielem)*velem + (veliledg+veliredg)*vedge)
+                ] = cinlet  # /(sum(velielem)*element_length + (veliledg+veliredg)*edge_length)
                 conctime[
                     1:, yout, i
-                ] = coutlet  # /(sum(veloelem)*velem + (veloledg+veloredg)*vedge)
+                ] = coutlet  # /(sum(veloelem)*element_length + (veloledg+veloredg)*edge_length)
             else:
-                #                massendtime[i] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*velem*vedge
-                #                massendtimey[yin,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*velem*vedge
-                #                massendtimey[yout,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*velem*vedge
-                #                massendtimey[yin+1:yout, i+1] = sum(sum(df[indices[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*velem*vedge
-                #                masstime[1:,yin,i] = (df[indices[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*velem*vedge
-                #                masstime[1:,yout,i] = (df[indices[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*velem*vedge
-                #                masstime[1:,yin+1:yout, i] = np.sum(df[indices[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(velem**2),axis=-1) + ((df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright])*satrelem)*velem*vedge
+                #                massendtime[i] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(edge_length**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*element_length*edge_length
+                #                massendtimey[yin,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*element_length*edge_length
+                #                massendtimey[yout,i+1] = (df[indices[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*element_length*edge_length
+                #                massendtimey[yin+1:yout, i+1] = sum(sum(df[indices[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*element_length*edge_length
+                #                masstime[1:,yin,i] = (df[indices[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(edge_length**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*element_length*edge_length
+                #                masstime[1:,yout,i] = (df[indices[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(edge_length**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*element_length*edge_length
+                #                masstime[1:,yin+1:yout, i] = np.sum(df[indices[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(element_length**2),axis=-1) + ((df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright])*satrelem)*element_length*edge_length
                 conctime[1:, yin, i] = (
                     (
                         df[indices[i] - 3, 1:, yin, xleft] * satiledg * veliledg
                         + df[indices[i] - 3, 1:, yin, xright] * satiredg * veliredg
                     )
-                    * (vedge)
+                    * (edge_length)
                     + (
                         np.sum(
                             df[indices[i] - 3, 1:, yin, xleft + 1 : xright]
@@ -868,14 +864,14 @@ def calcconcmasstime(
                             axis=-1,
                         )
                     )
-                    * velem
-                ) / (vedge * (veliredg + veliledg) + np.sum(velem * velielem, axis=-1))
+                    * element_length
+                ) / (edge_length * (veliredg + veliledg) + np.sum(element_length * velielem, axis=-1))
                 conctime[1:, yout, i] = (
                     (
                         df[indices[i] - 3, 1:, yout, xleft] * satoledg * veloledg
                         + df[indices[i] - 3, 1:, yout, xright] * satoredg * veloredg
                     )
-                    * (vedge)
+                    * (edge_length)
                     + (
                         np.sum(
                             df[indices[i] - 3, 1:, yout, xleft + 1 : xright]
@@ -884,13 +880,13 @@ def calcconcmasstime(
                             axis=-1,
                         )
                     )
-                    * velem
-                ) / (vedge * (veloredg + veloledg) + np.sum(velem * veloelem, axis=-1))
+                    * element_length
+                ) / (edge_length * (veloredg + veloledg) + np.sum(element_length * veloelem, axis=-1))
                 conctime[1:, yin + 1 : yout, i] = (
                     np.sum(
                         df[indices[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                         * satelem
-                        * velem
+                        * element_length
                         * velelem,
                         axis=-1,
                     )
@@ -900,8 +896,8 @@ def calcconcmasstime(
                         * satrelem
                         * velrelem
                     )
-                    * vedge
-                ) / (vedge * (vellelem + velrelem) + np.sum(velem * velelem, axis=-1))
+                    * edge_length
+                ) / (edge_length * (vellelem + velrelem) + np.sum(element_length * velelem, axis=-1))
     else:
         satielem = df[4, 1:, yin, xleft + 1 : xright]
         satoelem = df[4, 1:, yout, xleft + 1 : xright]
@@ -913,61 +909,61 @@ def calcconcmasstime(
         satoredg = df[4, 1:, yout, xright]
         satelem = df[4, 1:, yin + 1 : yout, xleft + 1 : xright]
         for i in range(len(indices)):
-            #           massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[int(np.shape(df)[1])-2])*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft+1:xright]*satelem[int(np.shape(df)[1])-2,:,:]*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft]*satlelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xright]*satrelem[np.shape(df)[1]-2,:]))*velem*vedge
-            #           massendtimey[yin,i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[np.shape(df)[1]-2])*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]))*velem*vedge
-            #           massendtimey[yout,i] = (df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[np.shape(df)[1]-2])*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]))*velem*vedge
-            #           massendtimey[yin+1:yout, i] = sum(sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft+1:xright]*satelem[np.shape(df)[1]-2,:,:]*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft]*satlelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xright]*satrelem[np.shape(df)[1]-2,:]))*velem*vedge
-            #           masstime[1:,yin,i] = (df[vars[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*velem*vedge
-            #           masstime[1:,yout,i] = (df[vars[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(vedge**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*velem*vedge
-            #           masstime[1:,yin+1:yout, i] = np.sum(df[vars[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(velem**2),axis=-1) + (df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright]*satrelem)*velem*vedge
+            #           massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[int(np.shape(df)[1])-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[int(np.shape(df)[1])-2])*(edge_length**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft+1:xright]*satelem[int(np.shape(df)[1])-2,:,:]*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft]*satlelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xright]*satrelem[np.shape(df)[1]-2,:]))*element_length*edge_length
+            #           massendtimey[yin,i] = (df[vars[i]-3,np.shape(df)[1]-2,yin,xleft]*satiledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yin,xright]*satiredg[np.shape(df)[1]-2])*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin,xleft+1:xright]*satielem[np.shape(df)[1]-2,:]))*element_length*edge_length
+            #           massendtimey[yout,i] = (df[vars[i]-3,np.shape(df)[1]-2,yout,xleft]*satoledg[np.shape(df)[1]-2] + df[vars[i]-3,np.shape(df)[1]-2,yout,xright]*satoredg[np.shape(df)[1]-2])*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yout,xleft+1:xright]*satoelem[np.shape(df)[1]-2,:]))*element_length*edge_length
+            #           massendtimey[yin+1:yout, i] = sum(sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft+1:xright]*satelem[np.shape(df)[1]-2,:,:]*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xleft]*satlelem[np.shape(df)[1]-2,:]) + sum(df[vars[i]-3,np.shape(df)[1]-2,yin+1:yout,xright]*satrelem[np.shape(df)[1]-2,:]))*element_length*edge_length
+            #           masstime[1:,yin,i] = (df[vars[i]-3,1:,yin,xleft]*satiledg + df[vars[i]-3,1:,yin,xright]*satiredg)*(edge_length**2) + (np.sum(df[vars[i]-3,1:,yin,xleft+1:xright]*satielem, axis=-1))*element_length*edge_length
+            #           masstime[1:,yout,i] = (df[vars[i]-3,1:,yout,xleft]*satoledg + df[vars[i]-3,1:,yout,xright]*satoredg)*(edge_length**2) + (np.sum(df[vars[i]-3,1:,yout,xleft+1:xright]*satoelem, axis = -1))*element_length*edge_length
+            #           masstime[1:,yin+1:yout, i] = np.sum(df[vars[i]-3,1:,yin+1:yout,xleft+1:xright]*satelem*(element_length**2),axis=-1) + (df[vars[i]-3,1:,yin+1:yout,xleft]*satlelem + df[vars[i]-3,1:,yin+1:yout,xright]*satrelem)*element_length*edge_length
             conctime[1:, yin, i] = (
                 (
                     df[indices[i] - 3, 1:, yin, xleft] * satiledg
                     + df[indices[i] - 3, 1:, yin, xright] * satiredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + np.sum(
                     df[indices[i] - 3, 1:, yin, xleft + 1 : xright] * satielem, axis=-1
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
             conctime[1:, yout, i] = (
                 (
                     df[indices[i] - 3, 1:, yout, xleft] * satoledg
                     + df[indices[i] - 3, 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[indices[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
             conctime[1:, yin + 1 : yout, i] = (
                 np.sum(
                     df[indices[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-1,
                 )
                 + (
                     df[indices[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
                     + df[indices[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
                 )
-                * velem
-                * vedge
-            ) / (vbc * velem)
-    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * vedge + (
+                * element_length
+                * edge_length
+            ) / (vbc * element_length)
+    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * edge_length + (
         np.sum(vellelem)
         + np.sum(velrelem)
         + np.sum(velelem)
         + np.sum(velielem)
         + np.sum(veloelem)
-    ) * velem
+    ) * element_length
     #    Velocity = np.mean ([InVelocity, OutVelocity, MidVelocity])
     Velocity = df[2, - 1, :, :]
     Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
@@ -978,8 +974,8 @@ def calcconcmasstimeX(
     Trial, Het, Anis, gw, d, fpre, fsuf, yin, yout, xleft, xright, vars
 ):
     #DO NOT USE AS IT USES THE ENTIRE TRIAL SERIES
-    vedge = 0.005
-    velem = 0.01
+    edge_length = 0.005
+    element_length = 0.01
     vbc = 0.3
     massendtime = np.zeros([len(vars)])
     massendtimey = np.zeros([51, len(vars) + 1])
@@ -1009,43 +1005,43 @@ def calcconcmasstimeX(
         satoredg = 1
         satelem = 1
         for i in range(len(vars)):
-            #            massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*velem*vedge
-            #            massendtimey[yin,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*velem*vedge
-            #            massendtimey[yout,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(vedge**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*velem*vedge
-            #            massendtimey[yin+1:yout, i+1] = sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(velem**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*velem*vedge
+            #            massendtime[i] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg + df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(edge_length**2) + sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft+1:xright-1]*satelem*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout-1,xright]*satrelem))*element_length*edge_length
+            #            massendtimey[yin,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yin,xleft]*satiledg + df[vars[i]-3,np.shape(df)[1]-1,yin,xright]*satiredg)*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin,xleft+1:xright-1]*satielem))*element_length*edge_length
+            #            massendtimey[yout,i+1] = (df[vars[i]-3,np.shape(df)[1]-1,yout,xleft]*satoledg + df[vars[i]-3,np.shape(df)[1]-1,yout,xright]*satoredg)*(edge_length**2) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yout,xleft+1:xright-1]*satoelem))*element_length*edge_length
+            #            massendtimey[yin+1:yout, i+1] = sum(sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft+1:xright-1]*satelem*(element_length**2))) + (sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xleft]*satlelem) + sum(df[vars[i]-3,np.shape(df)[1]-1,yin+1:yout,xright]*satrelem))*element_length*edge_length
             masstime[1:, xleft, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xleft] * satiledg
                     + df[vars[i] - 3, 1:, yout, xleft] * satoledg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yin + 1 : yout, xleft] * satielem, axis=-1
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             masstime[1:, xright, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xright] * satiredg
                     + df[vars[i] - 3, 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yin + 1 : yout, xright] * satoelem, axis=-1
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             masstime[1:, xleft + 1 : xright, i + 1] = (
                 np.sum(
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-2,
                 )
                 + (
@@ -1055,15 +1051,15 @@ def calcconcmasstimeX(
                     )
                     * satrelem
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             conctime[1:, xleft, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xleft] * satiledg * veliledg
                     + df[vars[i] - 3, 1:, yout, xleft] * satoledg * veloledg
                 )
-                * (vedge)
+                * (edge_length)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yin + 1 : yout, xleft]
@@ -1072,14 +1068,14 @@ def calcconcmasstimeX(
                         axis=-1,
                     )
                 )
-                * velem
-            ) / (vedge * (veloledg + veliledg) + np.sum(velem * vellelem, axis=-1))
+                * element_length
+            ) / (edge_length * (veloledg + veliledg) + np.sum(element_length * vellelem, axis=-1))
             conctime[1:, xright, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xright] * satiredg * veliredg
                     + df[vars[i] - 3, 1:, yout, xright] * satoredg * veloredg
                 )
-                * (vedge)
+                * (edge_length)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yin + 1 : yout, xright]
@@ -1088,13 +1084,13 @@ def calcconcmasstimeX(
                         axis=-1,
                     )
                 )
-                * velem
-            ) / (vedge * (veloredg + veliredg) + np.sum(velem * velrelem, axis=-1))
+                * element_length
+            ) / (edge_length * (veloredg + veliredg) + np.sum(element_length * velrelem, axis=-1))
             conctime[1:, xleft + 1 : xright, i + 1] = (
                 np.sum(
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * velem
+                    * element_length
                     * velelem,
                     axis=-2,
                 )
@@ -1104,8 +1100,8 @@ def calcconcmasstimeX(
                     * satoelem
                     * veloelem
                 )
-                * vedge
-            ) / (vedge * (veloelem + velielem) + np.sum(velem * velelem, axis=-2))
+                * edge_length
+            ) / (edge_length * (veloelem + velielem) + np.sum(element_length * velelem, axis=-2))
     else:
         satielem = df[4, 1:, yin, xleft + 1 : xright]
         satoelem = df[4, 1:, yout, xleft + 1 : xright]
@@ -1128,7 +1124,7 @@ def calcconcmasstimeX(
                     + df[vars[i] - 3, np.shape(df)[1] - 2, yout, xright]
                     * satoredg[int(np.shape(df)[1]) - 2]
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + sum(
                     sum(
                         df[
@@ -1138,7 +1134,7 @@ def calcconcmasstimeX(
                             xleft + 1 : xright,
                         ]
                         * satelem[int(np.shape(df)[1]) - 2, :, :]
-                        * (velem ** 2)
+                        * (element_length ** 2)
                     )
                 )
                 + (
@@ -1159,8 +1155,8 @@ def calcconcmasstimeX(
                         * satrelem[np.shape(df)[1] - 2, :]
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             massendtimey[yin, i + 1] = (
                 (
@@ -1169,15 +1165,15 @@ def calcconcmasstimeX(
                     + df[vars[i] - 3, np.shape(df)[1] - 2, yin, xright]
                     * satiredg[np.shape(df)[1] - 2]
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     sum(
                         df[vars[i] - 3, np.shape(df)[1] - 2, yin, xleft + 1 : xright]
                         * satielem[np.shape(df)[1] - 2, :]
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             massendtimey[yout, i + 1] = (
                 (
@@ -1186,15 +1182,15 @@ def calcconcmasstimeX(
                     + df[vars[i] - 3, np.shape(df)[1] - 2, yout, xright]
                     * satoredg[np.shape(df)[1] - 2]
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     sum(
                         df[vars[i] - 3, np.shape(df)[1] - 2, yout, xleft + 1 : xright]
                         * satoelem[np.shape(df)[1] - 2, :]
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             massendtimey[yin + 1 : yout, i + 1] = (
                 sum(
@@ -1206,7 +1202,7 @@ def calcconcmasstimeX(
                             xleft + 1 : xright,
                         ]
                         * satelem[np.shape(df)[1] - 2, :, :]
-                        * (velem ** 2)
+                        * (element_length ** 2)
                     )
                 )
                 + (
@@ -1219,100 +1215,100 @@ def calcconcmasstimeX(
                         * satrelem[np.shape(df)[1] - 2, :]
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             masstime[1:, yin, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xleft] * satiledg
                     + df[vars[i] - 3, 1:, yin, xright] * satiredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem, axis=-1
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             masstime[1:, yout, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yout, xleft] * satoledg
                     + df[vars[i] - 3, 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             masstime[1:, yin + 1 : yout, i + 1] = (
                 np.sum(
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-1,
                 )
                 + (
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
                     + df[vars[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
             conctime[1:, yin, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yin, xleft] * satiledg
                     + df[vars[i] - 3, 1:, yin, xright] * satiredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + np.sum(
                     df[vars[i] - 3, 1:, yin, xleft + 1 : xright] * satielem, axis=-1
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
             conctime[1:, yout, i + 1] = (
                 (
                     df[vars[i] - 3, 1:, yout, xleft] * satoledg
                     + df[vars[i] - 3, 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[vars[i] - 3, 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
             conctime[1:, yin + 1 : yout, i + 1] = (
                 np.sum(
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-1,
                 )
                 + (
                     df[vars[i] - 3, 1:, yin + 1 : yout, xleft] * satlelem
                     + df[vars[i] - 3, 1:, yin + 1 : yout, xright] * satrelem
                 )
-                * velem
-                * vedge
-            ) / (vbc * velem)
-    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * vedge + (
+                * element_length
+                * edge_length
+            ) / (vbc * element_length)
+    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * edge_length + (
         np.sum(vellelem)
         + np.sum(velrelem)
         + np.sum(velelem)
         + np.sum(velielem)
         + np.sum(veloelem)
-    ) * velem
+    ) * element_length
     #    Velocity = np.mean ([InVelocity, OutVelocity, MidVelocity])
     Velocity = df[2, np.shape(df)[1] - 1, :, :]
     return df, massendtime, masstime, conctime, np.mean(Velocity)
@@ -1320,8 +1316,8 @@ def calcconcmasstimeX(
 
 def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, gvarnames, flowregime):
     import data_reader.data_processing as proc
-    vedge = 0.005
-    velem = 0.01
+    edge_length = 0.005
+    element_length = 0.01
     vbc = 0.3
     df = numpyarray
     biomasstime = np.zeros([np.shape(df)[1]-1, nodesinydirection,  len(gvarnames)])
@@ -1355,87 +1351,87 @@ def biomasstimefunc(numpyarray, yin, yout, xleft, xright, nodesinydirection, gva
                     df[species[b]['TecIndex'], 1:, yin, xleft] * satiledg
                     + df[species[b]['TecIndex'], 1:, yin, xright] * satiredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[species[b]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
         biomasstime[:, yout, i] = (
                 (
                     df[species[b]['TecIndex'], 1:, yout, xleft] * satoledg
                     + df[species[b]['TecIndex'], 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[species[b]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
         biomasstime[:, yin + 1 : yout, i] = (
                 np.sum(
                     df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-1,
                 )
                 + (
                     df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem
                     + df[species[b]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem
                 )
-                * velem
-                * vedge
+                * element_length
+                * edge_length
             )
         bioconctime[:, yin, i] = (
                 (
                     df[species[b]['TecIndex'], 1:, yin, xleft] * satiledg
                     + df[species[b]['TecIndex'], 1:, yin, xright] * satiredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + np.sum(
                     df[species[b]['TecIndex'], 1:, yin, xleft + 1 : xright] * satielem,
                     axis=-1,
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
         bioconctime[:, yout, i] = (
                 (
                     df[species[b]['TecIndex'], 1:, yout, xleft] * satoledg
                     + df[species[b]['TecIndex'], 1:, yout, xright] * satoredg
                 )
-                * (vedge ** 2)
+                * (edge_length ** 2)
                 + (
                     np.sum(
                         df[species[b]['TecIndex'], 1:, yout, xleft + 1 : xright] * satoelem,
                         axis=-1,
                     )
                 )
-                * velem
-                * vedge
-            ) / (vbc * vedge)
+                * element_length
+                * edge_length
+            ) / (vbc * edge_length)
         bioconctime[:, yin + 1 : yout, i] = (
                 np.sum(
                     df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft + 1 : xright]
                     * satelem
-                    * (velem ** 2),
+                    * (element_length ** 2),
                     axis=-1,
                 )
                 + (
                     df[species[b]['TecIndex'], 1:, yin + 1 : yout, xleft] * satlelem
                     + df[species[b]['TecIndex'], 1:, yin + 1 : yout, xright] * satrelem
                 )
-                * velem
-                * vedge
-            ) / (vbc * velem)
+                * element_length
+                * edge_length
+            ) / (vbc * element_length)
     return biomasstime, bioconctime
 
 def correlationanalysis(
