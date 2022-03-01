@@ -267,7 +267,7 @@ def diversity_carbon (data, carbon_num, bio_num):
     B = data[:,carbon_num:]
     
     ## SHANNON DIVERSITY AND CARBON STOCK
-    proportion = B/np.sum(B,axis=0)
+    proportion = B/B.sum(axis=1, keepdims = True)#np.sum(B,axis=0)
     Shannon = -np.sum(proportion*np.log(proportion), axis = 1)
     total_C_stock = np.sum(C,axis=1) + np.sum(B, axis=1)
     C_stock = np.sum(C,axis=1)
