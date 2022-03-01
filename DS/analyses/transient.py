@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 
-def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, element_length = 0.01, edge_length = 0.005, gvarnames,flowregime):
+def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,flowregime, element_length = 0.01, edge_length = 0.005):
     import DS.data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     mobilespecies = list(t for t in species.keys() if (species[t]['Location'] == "Mobile") and (species[t]['State'] != "Dissolved"))
@@ -199,7 +199,7 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, element_leng
     
     return conctime, TotalFlow, Headinlettime
 
-def biomass_time(data, yin,yout,xleft,xright,edge_length = 0.005, element_length = 0.01, gvarnames,flowregime):
+def biomass_time(data, yin,yout,xleft,xright,gvarnames,flowregime, edge_length = 0.005, element_length = 0.01):
     import data_reader.data_processing as proc
     species = proc.speciesdict(flowregime)
     
