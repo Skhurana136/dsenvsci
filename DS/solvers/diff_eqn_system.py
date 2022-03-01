@@ -29,7 +29,7 @@ class ReactionNetwork(object):
         carbon_mol_bio = 10,
         carbon_num = 1,
         bio_num = 3,
-        fungal_num = 2,
+        fungal_num = 0,
         carbon_input = 0,
         sigmoid_coeff_stolpovsky = 0.1,
         necromass_distribution = "equally",
@@ -54,7 +54,7 @@ class ReactionNetwork(object):
         fungal_num : int.
             Number of fungal species. Default value is 2.
         carbon_input : float.
-            Continuous addition of carbon to the most complex carbon pool. Default is 0, implying a closed system.
+            Continuous addition of carbon to all carbon pools. Default is 0, implying a closed system.
         sigmoid_coeff_stolpovsky : float.
             Coefficient to use in adapted sigmoid curve (see Stolpovsky et al., 2011). Can vary from 0.01 to 0.1.
         necromass_distribution : string.
@@ -110,8 +110,8 @@ class ReactionNetwork(object):
         self.k_params = self.parameters[self.para_size-3].reshape(self.c_n, self.b_n)
         self.y_params = self.parameters[self.para_size-2]
         self.m_params = self.parameters[self.para_size-1]
-        self.lim_k_params = self.k_params/100
-
+        #self.lim_k_params = self.k_params/100
+ 
         self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
         self.most_labile_c = self.labile_c[0]
         self.least_labile_c = self.labile_c[-1]
@@ -159,7 +159,7 @@ class ReactionNetwork(object):
             exoenzyme = self.v_enz * B
             
             # 2. Depolymerization of all C by exoenzymes
-            c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + C[...,None])
+            c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + exoenzyme)#C[...,None])
             
             # 3. Respiration
             # formula to implement for all B,C combinations:
@@ -173,7 +173,7 @@ class ReactionNetwork(object):
             # 5. mortality
             # formula to implement for all B
             # r = m*B
-            b_mort = self.m_params*np.sqrt(B)
+            b_mort = self.m_params*B
             
             # 6. dead microbes back to C (distributed evenly across all C)
             
@@ -193,7 +193,7 @@ class ReactionNetwork(object):
 
             # 1. rate of change of carbon species concentration
             # reduction in concentration of carbon due to depolymerization and microbial uptake
-            C_rate = -1*np.sum(c_depoly,axis=1) #- 1*np.sum(b_uptake, axis = 1)
+            C_rate = -1*np.sum(c_depoly,axis=1)
 
             # Add bacteria necromass to carbon pools
             if self.necromass_loop == "equally":
@@ -207,7 +207,7 @@ class ReactionNetwork(object):
 
             C_rate[self.least_labile_c] += c_recycle[self.least_labile_c]
 
-            # add continuous input to the most labile carbon compound
+            # add continuous input to all carbon pools
             C_rate += self.c_bc
 
             # 8. rate of change of biomass species concentration
