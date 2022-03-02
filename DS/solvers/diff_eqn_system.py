@@ -251,3 +251,62 @@ class ReactionNetwork(object):
         #            lambda x_bc0, x_bc1: boundary_conditions(x_bc0, x_bc1, self.c_n, self.b_n), time_space, self.initial_guess.T)
 
         return self.initial_guess
+
+def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
+
+    """Function to generate random parameter sets to feed into the reaction network.
+        
+        Parameter
+        ---------
+        dom_n : int.
+            Number of dissolved organic matter chemical species in the system.
+        bio_n : int.
+            Number of biomass species in the system.
+        ratio_max_rate_mortality: float.
+            Ratio to be adopted to modulate maximum rate of dom consumption and mortality
+            of microbes to balance microbial die off and consumption of carbon.
+        """
+
+    # Initialize the same number of parameters as dom and biomass species:
+    enzyme_prod_para = np.random.uniform(0.2, 0.4, bio_n)
+    max_rate_para = np.random.normal(0.5, 0.001, bio_n*dom_n)#np.random.uniform(0.001,15,bio_n*dom_n)
+    sat_conc_para = np.random.normal(600, 200, bio_n*dom_n)#np.random.randint(1000,8000,bio_n*dom_n)
+    efficiency_para = np.random.normal(0.5, 0.01, bio_n)#np.random.uniform(0.1,0.99,bio_n)
+    mortality_para = np.min(max_rate_para.reshape(dom_n, bio_n),axis=0)/ratio_max_rate_mortality
+
+    return enzyme_prod_para, max_rate_para, sat_conc_para, efficiency_para, mortality_para
+
+def generate_random_initial_conditions(dom_n, bio_n):
+
+    """Function to generate random initial concentration distribution of carbon and biomass
+    species in the system.
+        
+        Parameter
+        ---------
+        dom_n : int.
+            Number of dissolved organic matter chemical species in the system.
+        bio_n : int.
+            Number of biomass species in the system.
+        """
+
+    # initial conditions
+    dom_conc = np.random.normal(1000, 100, dom_n)#np.random.randint(500,1000,dom_n)
+    biomass_conc = np.random.normal(400, 50, bio_n)#np.random.randint(100,1000,bio_n)
+
+    return dom_conc, biomass_conc
+
+def generate_random_boundary_conditions():
+    """Function to generate continuous carbon input into the system.
+        
+        Parameter
+        ---------
+        No parameters yet.
+        """
+
+    # To enforce steady state, identify the simplest carbon compound
+        #simplest_C = np.argsort(np.mean(kparams.reshape(dom_n, bio_n), axis=1))[-1]
+        #complex_C = np.argsort(np.mean(kparams.reshape(dom_n, bio_n), axis=1))[0]
+    # Compute fresh carbon input commensurate to the mineralization of the simplest carbon compound
+    computed_carbon_input = 0#[100,50,10,0,50]
+
+    return computed_carbon_input
