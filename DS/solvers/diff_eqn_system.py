@@ -287,26 +287,40 @@ def generate_random_initial_conditions(dom_n, bio_n):
             Number of dissolved organic matter chemical species in the system.
         bio_n : int.
             Number of biomass species in the system.
+        random_seed : int.
+            Seed for generating 
         """
 
     # initial conditions
     dom_conc = np.random.normal(1000, 100, dom_n)#np.random.randint(500,1000,dom_n)
-    biomass_conc = np.random.normal(400, 50, bio_n)#np.random.randint(100,1000,bio_n)
+    biomass_conc = np.random.normal(60, 15, bio_n)#np.random.randint(100,1000,bio_n)
 
     return dom_conc, biomass_conc
 
-def generate_random_boundary_conditions():
+def generate_random_boundary_conditions(dom_n, user_input, method_name = "uniform_constant"):
     """Function to generate continuous carbon input into the system.
         
         Parameter
         ---------
-        No parameters yet.
+        method_name : str.
+
+            Choose between different ways to enforce continuous input of carbon:
+            uniform_constant : Default.
+                            A random value that is added as a continuous source for all carbon pools.
+            different_constant : A vector of random values added as a continuous source for the carbon pools.
+            user_defined : A vector of values provided by the user as a list.
+
         """
 
     # To enforce steady state, identify the simplest carbon compound
         #simplest_C = np.argsort(np.mean(kparams.reshape(dom_n, bio_n), axis=1))[-1]
         #complex_C = np.argsort(np.mean(kparams.reshape(dom_n, bio_n), axis=1))[0]
     # Compute fresh carbon input commensurate to the mineralization of the simplest carbon compound
-    computed_carbon_input = 0#[100,50,10,0,50]
+    if method_name == "uniform_constant":
+        computed_carbon_input = np.random.normal(1000, 100, dom_n)
+    elif method_name == "different_constant":
+        computed_carbon_input = np.random.normal(1000, 100, dom_n)
+    elif method_name == "user_defined":
+        computed_carbon_input = user_input
 
     return computed_carbon_input
