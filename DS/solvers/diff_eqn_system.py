@@ -95,7 +95,7 @@ class ReactionNetwork(object):
         self.para_size = len(self.parameters)
         print("Reaction network constants have been defined")
 
-    def identify_components_natures(self):
+    def identify_components_natures(self, recalcitrance_criterion):
         """Function to categorize the components of the reaction network.
         What is most recalcitrant (least labile) carbon pool?
         Which microbial species are fungi and the rest bacteria?
@@ -111,8 +111,20 @@ class ReactionNetwork(object):
         self.y_params = self.parameters[self.para_size-2]
         self.m_params = self.parameters[self.para_size-1]
         #self.lim_k_params = self.k_params/100
- 
-        self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
+
+        if recalcitrance_criterion == 'oxidation_state':
+            self.labile_c = np.argsort (np.mean(self.oxidation_state))
+        elif recalcitrance_criterion == 'OC_ratio':
+            self.labile_c = np.argsort (np.mean(self.oc_ratio))
+        elif recalcitrance_criterion == 'half_saturation_constant':
+            self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
+        elif recalcitrance_criterion == 'zakem_indicator':
+            rho_i_j = self.v_params
+            y_i_j = self.y_params
+            l_j = self.m_params
+            zakem_q_i_j = np.divide(rho_i_j, l_j)*(np.sum(np.multiply(y_i_j,rho_i_j)/rho_i_j) + y_i_j)
+            self.labile_c = np.flipud(np.argsort(np.max(zakem_q_i_j, axis=0)))
+
         self.most_labile_c = self.labile_c[0]
         self.least_labile_c = self.labile_c[-1]
         self.middle_labile_group = self.labile_c[1:]
