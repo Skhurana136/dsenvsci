@@ -33,8 +33,6 @@ class ReactionNetwork(object):
         carbon_input = 0,
         sigmoid_coeff_stolpovsky = 0.1,
         necromass_distribution = "equally",
-        enzyme_production_rate_constant = 0.7,
-        efficiency_bio_uptake = 0.5,
         ):
 
         """Method to assign constants for the entire system.
@@ -60,10 +58,6 @@ class ReactionNetwork(object):
         necromass_distribution : string.
             Switch to specify if bacteria necromass distributes evenly among all carbon pools or
             "mid-labile" carbon pools. Default option is equal distribution among all carbon pools.
-        enzyme_production_rate_constant : float.
-            First order rate constant for production of extracellular enzymes by fungi. Default value is 0.7
-        efficiency_bio_uptake : float.
-            Fraction of depolymerized carbon pool that is used for microbial uptake (respiration + growth). Default value is 0.5.
         """
         
         self.max_cap = maximum_capacity
@@ -74,8 +68,6 @@ class ReactionNetwork(object):
         self.c_bc = carbon_input
         self.st = sigmoid_coeff_stolpovsky
         self.necromass_loop = necromass_distribution
-        self.v_enz = enzyme_production_rate_constant
-        self.z = efficiency_bio_uptake
         
     def set_rate_constants(self, *user_input):
         """Method to assign constants to pass to other functions.
@@ -106,16 +98,18 @@ class ReactionNetwork(object):
         """
         
         # constants
-        self.v_params = self.parameters[0].reshape(self.c_n, self.b_n)
+        self.recalcitrance_state = self.parameters[0]
+        self.v_enz = self.parameters[1]
+        self.z = self.parameters[2].reshape(self.c_n, self.b_n)
+        self.v_params = self.parameters[-4].reshape(self.c_n, self.b_n)
         self.k_params = self.parameters[self.para_size-3].reshape(self.c_n, self.b_n)
-        self.y_params = self.parameters[self.para_size-2]
+        self.y_params = self.parameters[self.para_size-2].reshape(self.c_n, self.b_n)
         self.m_params = self.parameters[self.para_size-1]
-        #self.lim_k_params = self.k_params/100
 
         if recalcitrance_criterion == 'oxidation_state':
-            self.labile_c = np.argsort (np.mean(self.oxidation_state))
+            self.labile_c = np.argsort (self.recalcitrance_state)
         elif recalcitrance_criterion == 'OC_ratio':
-            self.labile_c = np.argsort (np.mean(self.oc_ratio))
+            self.labile_c = np.argsort (self.recalcitrance_state)
         elif recalcitrance_criterion == 'half_saturation_constant':
             self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
         elif recalcitrance_criterion == 'zakem_indicator':
@@ -141,6 +135,13 @@ class ReactionNetwork(object):
         print ("Most labile carbon pool is : ", self.most_labile_c)
         #print ("Fungi pools are :", self.fungi)
         #print ("Bacteria pools are : ", self.bacteria)
+
+        # Re-oder parameters for each microbial group (z, vparams, kparams, yparams) based on the recalcitrance of the carbon compounds:
+        
+        self.z = np.sort(self.z)[::-1,:][self.labile_c,:] #More labile compounds will be taken up more efficiently from the environment
+        self.v_params = np.sort(self.v_params)[::-1,:][self.labile_c,:] #More labile compounds will have faster max rate of consumption
+        self.k_params = np.sort(self.k_params)[self.labile_c,:] #More labile compounds will have lower saturation constant
+        self.y_params = np.sort(self.y_params)[::-1,:][self.labile_c,:] #Microbes will grow more efficiently on more labile compounds 
     
     def solve_network (self, initial_conditions, time_span, time_space):
         """Method to set up the reaction network given the 
@@ -171,7 +172,7 @@ class ReactionNetwork(object):
             exoenzyme = self.v_enz * B
             
             # 2. Depolymerization of all C by exoenzymes
-            c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + exoenzyme)#C[...,None])
+            c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + C[...,None])
             
             # 3. Respiration
             # formula to implement for all B,C combinations:
@@ -279,16 +280,28 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
             of microbes to balance microbial die off and consumption of carbon.
         """
 
-    # Initialize the same number of parameters as dom and biomass species:
+    # Randomize parameters associated with the carbon compounds and biomass species:
+    # Carbon compounds:
+    # Recalcitrance based on the oxidation state
+    recalcitrance_para = np.random.uniform(-4, 4, dom_n)
+
+    # Biomass species:
+    # First order rate constant for the production of exoenzymes by each microbial group
     enzyme_prod_para = np.random.uniform(0.2, 0.4, bio_n)
-    max_rate_para = np.random.normal(0.5, 0.001, bio_n*dom_n)#np.random.uniform(0.001,15,bio_n*dom_n)
-    sat_conc_para = np.random.normal(600, 200, bio_n*dom_n)#np.random.randint(1000,8000,bio_n*dom_n)
-    efficiency_para = np.random.normal(0.5, 0.01, bio_n)#np.random.uniform(0.1,0.99,bio_n)
+    #Fraction of depolymerized carbon pool that is used for microbial uptake (respiration + growth).
+    efficiency_bio_uptake = np.random.normal(0.5, 0.1, bio_n*dom_n)
+    # Yield coefficient of each microbial group associated with each carbon compound
+    efficiency_para = np.random.normal(0.5, 0.01, bio_n*dom_n)
+    # M-M max rate constant for consumption of carbon compound by a particular microbial group
+    max_rate_para = np.random.normal(0.5, 0.001, bio_n*dom_n)
+    # M-M half saturation constant for consumption of carbon compound by a particular microbial group
+    sat_conc_para = np.random.normal(600, 200, bio_n*dom_n)
+    # Second order rate constant for quadratic mortality rate of microbial groups
     mortality_para = np.min(max_rate_para.reshape(dom_n, bio_n),axis=0)/ratio_max_rate_mortality
 
-    return enzyme_prod_para, max_rate_para, sat_conc_para, efficiency_para, mortality_para
+    return recalcitrance_para, enzyme_prod_para, efficiency_bio_uptake, max_rate_para, sat_conc_para, efficiency_para, mortality_para
 
-def generate_random_initial_conditions(dom_n, bio_n):
+def generate_random_initial_conditions(dom_n, bio_n, mean_dom_n, mean_bio_n):
 
     """Function to generate random initial concentration distribution of carbon and biomass
     species in the system.
@@ -304,8 +317,8 @@ def generate_random_initial_conditions(dom_n, bio_n):
         """
 
     # initial conditions
-    dom_conc = np.random.normal(1000, 100, dom_n)#np.random.randint(500,1000,dom_n)
-    biomass_conc = np.random.normal(60, 15, bio_n)#np.random.randint(100,1000,bio_n)
+    dom_conc = np.random.normal(mean_dom_n, mean_dom_n/10, dom_n)
+    biomass_conc = np.random.normal(mean_bio_n, mean_bio_n/10, bio_n)
 
     return dom_conc, biomass_conc
 
