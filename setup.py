@@ -7,7 +7,7 @@ AUTHORS = "Swamini Khurana"
 EMAIL = "swamini.khurana@gmail.com"
 LICENSE = "Copyright(c) 2005-2020, Helmholtz-Zentrum fuer Umweltforschung GmbH - UFZ. All rights reserved."
 PROJECT_URLS = {
-    "GitLab": "https://git.ufz.de/ml-cafe/ml-cafe_project_soilmoisture/-/tree/master/SM_module",
+    "Github": "https://github.com/Skhurana136/dsenvsci",
     "Documentation": "TBDone",
 }
 
@@ -15,11 +15,11 @@ PROJECT_URLS = {
 from setuptools import setup, find_packages
 
 setup(
-    name=DISTNAME,
-    version=VERSION,
-    description=DESCRIPTION,
-    authors=AUTHORS,
-    author_email=EMAIL,
+    name="dsenvsci",
+    version="0.0",
+    description='sk_package_for_data_science',
+    authors='Swamini Khurana',
+    author_email='swamini.khurana@gmail.com',
     packages=find_packages(exclude=["tests*", "docs*"]),
-    license=LICENSE,
+    license="Copyright(c) 2005-2020, Helmholtz-Zentrum fuer Umweltforschung GmbH - UFZ. All rights reserved.",
 )
