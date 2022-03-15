@@ -186,7 +186,7 @@ class ReactionNetwork(object):
             # 5. mortality
             # formula to implement for all B
             # r = m*B
-            b_mort = self.m_params*B
+            b_mort = self.m_params*(B**2)
             
             # 6. dead microbes back to C (distributed evenly across all C)
             
@@ -208,11 +208,15 @@ class ReactionNetwork(object):
             # reduction in concentration of carbon due to depolymerization and microbial uptake
             C_rate = -1*np.sum(c_depoly,axis=1)
 
-            # Add bacteria necromass to carbon pools
+            # Add bacteria necromass to carbon pools:
             if self.necromass_loop == "equally":
                 C_rate += b_necromass/self.c_n
-            else:
-                C_rate[self.middle_labile_group] += b_necromass/(self.middle_labile_group.size)
+            elif self.necromass_loop == "oxidation_state":
+                self.carbon_0 = np.where(np.abs(self.recalcitrance_state-0)<0.3)[0][0]
+                if self.carbon_0.size > 0:
+                    C_rate[self.carbon_0] += b_necromass/(self.carbon_0.size)
+                else:
+                    C_rate[self.middle_labile_group] += b_necromass/(self.middle_labile_group.size)
 
             # add sequence of addition to the simpler carbon compounds
             for labile_c, less_labile_c in zip(self.labile_c[:-1], self.labile_c[1:]):

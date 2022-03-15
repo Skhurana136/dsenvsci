@@ -1,6 +1,6 @@
-# create this environment with python 3.7 with e.g. the following command:
-# conda create -n ds-envsci-env python=3.7
-# Install required packaged afterwards with this command:
+# create this environment with python 3.9 with e.g. the following command:
+# conda create -n ds-envsci-env python=3.9
+# Install required packages afterwards with this command:
 # conda env update -n ds-envsci-env --file ds-envsci-env.yml
 
 name: ds-envsci-env

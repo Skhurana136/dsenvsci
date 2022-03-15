@@ -1,0 +1,6 @@
+setup.py
+DS/__init__.py
+dsenvsci.egg-info/PKG-INFO
+dsenvsci.egg-info/SOURCES.txt
+dsenvsci.egg-info/dependency_links.txt
+dsenvsci.egg-info/top_level.txt
