@@ -305,7 +305,7 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
 
     return recalcitrance_para, enzyme_prod_para, efficiency_bio_uptake, max_rate_para, sat_conc_para, efficiency_para, mortality_para
 
-def generate_random_initial_conditions(dom_n, bio_n, mean_dom_n, mean_bio_n):
+def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio):
 
     """Function to generate random initial concentration distribution of carbon and biomass
     species in the system.
@@ -321,8 +321,15 @@ def generate_random_initial_conditions(dom_n, bio_n, mean_dom_n, mean_bio_n):
         """
 
     # initial conditions
-    dom_conc = np.random.normal(mean_dom_n, mean_dom_n/10, dom_n)
-    biomass_conc = np.random.normal(mean_bio_n, mean_bio_n/10, bio_n)
+    dom_total = mean_dom*25
+    bio_total = mean_bio*25
+
+    dom_conc = np.random.normal(mean_dom, mean_dom/10, dom_n)
+    dom_conc = dom_conc/np.sum(dom_conc)*dom_total
+
+    biomass_conc = np.random.normal(mean_bio, mean_bio/10, bio_n)
+    dom_conc = dom_conc/np.sum(dom_conc)*bio_total
+    
 
     return dom_conc, biomass_conc
 
