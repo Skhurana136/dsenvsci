@@ -328,7 +328,7 @@ def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio):
     dom_conc = dom_conc/np.sum(dom_conc)*dom_total
 
     biomass_conc = np.random.normal(mean_bio, mean_bio/10, bio_n)
-    dom_conc = dom_conc/np.sum(dom_conc)*bio_total
+    biomass_conc = biomass_conc/np.sum(biomass_conc)*bio_total
     
 
     return dom_conc, biomass_conc
