@@ -212,7 +212,7 @@ class ReactionNetwork(object):
             if self.necromass_loop == "equally":
                 C_rate += b_necromass/self.c_n
             elif self.necromass_loop == "oxidation_state":
-                self.carbon_0 = np.where(np.abs(self.recalcitrance_state-0)<0.3)[0][0]
+                self.carbon_0 = np.where(np.abs(self.recalcitrance_state-0)<0.3)[0]
                 if self.carbon_0.size > 0:
                     C_rate[self.carbon_0] += b_necromass/(self.carbon_0.size)
                 else:
