@@ -287,7 +287,8 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
     # Randomize parameters associated with the carbon compounds and biomass species:
     # Carbon compounds:
     # Recalcitrance based on the oxidation state
-    recalcitrance_para = np.random.uniform(-4, 4, dom_n)
+    recalcitrance_para = np.random.uniform(-4, 4, dom_n-1)
+    recalcitrance_para = np.insert(recalcitrance_para, np.random.randint(0,recalcitrance_para.size), 0)
 
     # Biomass species:
     # First order rate constant for the production of exoenzymes by each microbial group
@@ -305,7 +306,7 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
 
     return recalcitrance_para, enzyme_prod_para, efficiency_bio_uptake, max_rate_para, sat_conc_para, efficiency_para, mortality_para
 
-def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio):
+def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio, dom_total, dom_bio_ratio):
 
     """Function to generate random initial concentration distribution of carbon and biomass
     species in the system.
@@ -321,9 +322,7 @@ def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio):
         """
 
     # initial conditions
-    dom_total = mean_dom*25
-    bio_total = mean_bio*25
-
+    bio_total = dom_total/dom_bio_ratio
     dom_conc = np.random.normal(mean_dom, mean_dom/10, dom_n)
     dom_conc = dom_conc/np.sum(dom_conc)*dom_total
 
