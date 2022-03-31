@@ -330,7 +330,7 @@ def masterrates(scenariotype):
     "AutotrophicPOMgen"
     ]
     
-    if (scenariotype == "unsaturated"):
+    if (scenariotype == "Unsaturated"):
         masterrates.append("DOdiffusion")
     
     return masterrates

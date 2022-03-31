@@ -101,23 +101,28 @@ class ReactionNetwork(object):
         self.recalcitrance_state = self.parameters[0]
         self.v_enz = self.parameters[1]
         self.z = self.parameters[2].reshape(self.c_n, self.b_n)
-        self.v_params = self.parameters[-4].reshape(self.c_n, self.b_n)
-        self.k_params = self.parameters[self.para_size-3].reshape(self.c_n, self.b_n)
-        self.y_params = self.parameters[self.para_size-2].reshape(self.c_n, self.b_n)
-        self.m_params = self.parameters[self.para_size-1]
+        self.v_params = self.parameters[-3].reshape(self.c_n, self.b_n)
+        self.k_params = self.parameters[-2].reshape(self.c_n, self.b_n)
+        self.m_params = self.parameters[-1]
 
         if recalcitrance_criterion == 'oxidation_state':
-            self.labile_c = np.argsort (self.recalcitrance_state)
+            self.depoly_ease_c = np.argsort (self.recalcitrance_state)
+            self.labile_c = self.depoly_ease_c[::-1]
+            self.most_depoly_c = self.depoly_ease_c[0]
+            self.least_depoly_c = self.depoly_ease_c[-1]
         elif recalcitrance_criterion == 'OC_ratio':
-            self.labile_c = np.argsort (self.recalcitrance_state)
+            self.depoly_ease_c = np.argsort (self.recalcitrance_state)
+            self.labile_c = self.depoly_ease_c[::-1]
+            self.most_depoly_c = self.depoly_ease_c[0]
+            self.least_depoly_c = self.depoly_ease_c[-1]
         elif recalcitrance_criterion == 'half_saturation_constant':
-            self.labile_c = np.argsort(np.mean(self.k_params, axis=1))
+            self.labile_c = np.argsort(np.mean(self.k_params, axis=0))
         elif recalcitrance_criterion == 'zakem_indicator':
             rho_i_j = self.v_params
             y_i_j = self.y_params
             l_j = self.m_params
             zakem_q_i_j = np.divide(rho_i_j, l_j)*(np.sum(np.multiply(y_i_j,rho_i_j)/rho_i_j) + y_i_j)
-            self.labile_c = np.flipud(np.argsort(np.max(zakem_q_i_j, axis=0)))
+            self.labile_c = np.flipud(np.argsort(np.max(zakem_q_i_j, axis=1)))
 
         self.most_labile_c = self.labile_c[0]
         self.least_labile_c = self.labile_c[-1]
@@ -141,8 +146,29 @@ class ReactionNetwork(object):
         self.z = np.sort(self.z)[::-1,:][self.labile_c,:] #More labile compounds will be taken up more efficiently from the environment
         self.v_params = np.sort(self.v_params)[::-1,:][self.labile_c,:] #More labile compounds will have faster max rate of consumption
         self.k_params = np.sort(self.k_params)[self.labile_c,:] #More labile compounds will have lower saturation constant
-        self.y_params = np.sort(self.y_params)[::-1,:][self.labile_c,:] #Microbes will grow more efficiently on more labile compounds 
-    
+        
+        #Assign yield coefficient according to oxidation state (logit equation)
+        self.y_params = np.zeros(self.c_n)
+        self.y_params[np.argwhere(self.recalcitrance_state<=0)] = 0.4
+        self.y_params[np.argwhere(self.recalcitrance_state>0)] = 0.4 - self.recalcitrance_state[np.argwhere(self.recalcitrance_state>0)]/4
+        self.y_params = np.tile(self.y_params,(self.b_n,1)).transpose()
+        
+    def microbe_carbon_switch (self, switch):
+
+        """Method to include switch to microbial-carbon interactions.
+        This will multiply the switch matrix with the max rate constant
+        matrix and switch off consumption of select carbon compounds by
+        select microbial species.
+
+        Parameter
+        ---------
+        switch : Array, float.
+            Switch matrix of microbe and carbon interactions.
+            Binary values (0 and 1). 0 indicates no interaction, 1 indicates interaction.
+        """
+
+        self.v_params = switch * self.v_params
+
     def solve_network (self, initial_conditions, time_span, time_space):
         """Method to set up the reaction network given the 
         number of dissolved organic matter species and microbial
@@ -219,10 +245,10 @@ class ReactionNetwork(object):
                     C_rate[self.middle_labile_group] += b_necromass/(self.middle_labile_group.size)
 
             # add sequence of addition to the simpler carbon compounds
-            for labile_c, less_labile_c in zip(self.labile_c[:-1], self.labile_c[1:]):
+            for labile_c, less_labile_c in zip(self.depoly_ease_c[:-1], self.depoly_ease_c[1:]):
                 C_rate[labile_c] += c_recycle[less_labile_c]                
 
-            C_rate[self.least_labile_c] += c_recycle[self.least_labile_c]
+            C_rate[self.least_depoly_c] += c_recycle[self.least_depoly_c]
 
             # add continuous input to all carbon pools
             C_rate += self.c_bc
@@ -287,24 +313,21 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
     # Randomize parameters associated with the carbon compounds and biomass species:
     # Carbon compounds:
     # Recalcitrance based on the oxidation state
-    recalcitrance_para = np.random.uniform(-4, 4, dom_n-1)
-    recalcitrance_para = np.insert(recalcitrance_para, np.random.randint(0,recalcitrance_para.size), 0)
+    recalcitrance_para = np.random.uniform(-0.5, 0.5, dom_n)
 
     # Biomass species:
     # First order rate constant for the production of exoenzymes by each microbial group
-    enzyme_prod_para = np.random.uniform(0.2, 0.4, bio_n)
+    enzyme_prod_para = np.random.uniform(0.1, 0.4, bio_n)
     #Fraction of depolymerized carbon pool that is used for microbial uptake (respiration + growth).
-    efficiency_bio_uptake = np.random.normal(0.5, 0.1, bio_n*dom_n)
-    # Yield coefficient of each microbial group associated with each carbon compound
-    efficiency_para = np.random.normal(0.5, 0.01, bio_n*dom_n)
+    efficiency_bio_uptake = np.random.normal(0.2, 0.005, bio_n*dom_n)
     # M-M max rate constant for consumption of carbon compound by a particular microbial group
-    max_rate_para = np.random.normal(0.5, 0.001, bio_n*dom_n)
+    max_rate_para = np.random.normal(0.004, 0.001, bio_n*dom_n)
     # M-M half saturation constant for consumption of carbon compound by a particular microbial group
     sat_conc_para = np.random.normal(600, 200, bio_n*dom_n)
     # Second order rate constant for quadratic mortality rate of microbial groups
     mortality_para = np.min(max_rate_para.reshape(dom_n, bio_n),axis=0)/ratio_max_rate_mortality
 
-    return recalcitrance_para, enzyme_prod_para, efficiency_bio_uptake, max_rate_para, sat_conc_para, efficiency_para, mortality_para
+    return recalcitrance_para, enzyme_prod_para, efficiency_bio_uptake, max_rate_para, sat_conc_para, mortality_para
 
 def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio, dom_total, dom_bio_ratio):
 
