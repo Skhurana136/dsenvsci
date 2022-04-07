@@ -86,11 +86,27 @@ class ReactionNetwork(object):
         self.parameters = list(l for l in user_input)
         self.para_size = len(self.parameters)
         print("Reaction network constants have been defined")
+    
+    def constants_previously_defined(self):
+        """Function to take in already defined constants and assign them again
+        without having to re-arrange them
+        
+        Parameter
+        ---------
 
-    def identify_components_natures(self, recalcitrance_criterion):
-        """Function to categorize the components of the reaction network.
-        What is most recalcitrant (least labile) carbon pool?
-        Which microbial species are fungi and the rest bacteria?
+        """
+        
+        # constants
+        self.y_params = self.parameters[0]
+        self.recalcitrance_state = self.parameters[1]
+        self.v_enz = self.parameters[2]
+        self.z = self.parameters[3]
+        self.v_params = self.parameters[-3]
+        self.k_params = self.parameters[-2]
+        self.m_params = self.parameters[-1]
+
+    def rearrange_constants(self):
+        """Function to reshape parameters.
         
         Parameter
         ---------
@@ -104,6 +120,16 @@ class ReactionNetwork(object):
         self.v_params = self.parameters[-3].reshape(self.c_n, self.b_n)
         self.k_params = self.parameters[-2].reshape(self.c_n, self.b_n)
         self.m_params = self.parameters[-1]
+
+    def identify_components_natures(self, recalcitrance_criterion):
+        """Function to categorize the components of the reaction network.
+        What is most recalcitrant (least labile) carbon pool?
+        Which microbial species are fungi and the rest bacteria?
+        
+        Parameter
+        ---------
+
+        """
 
         if recalcitrance_criterion == 'oxidation_state':
             self.depoly_ease_c = np.argsort (self.recalcitrance_state)
