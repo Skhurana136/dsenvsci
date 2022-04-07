@@ -166,7 +166,10 @@ class ReactionNetwork(object):
         print ("Most labile carbon pool is : ", self.most_labile_c)
         #print ("Fungi pools are :", self.fungi)
         #print ("Bacteria pools are : ", self.bacteria)
+    
+    def reorder_constants_with_comp_nature(self):
 
+    
         # Re-oder parameters for each microbial group (z, vparams, kparams, yparams) based on the recalcitrance of the carbon compounds:
         
         self.z = np.sort(self.z)[::-1,:][self.labile_c,:] #More labile compounds will be taken up more efficiently from the environment
