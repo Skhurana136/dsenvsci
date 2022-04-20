@@ -176,10 +176,10 @@ class ReactionNetwork(object):
         self.v_params = np.sort(self.v_params)[::-1,:][self.labile_c,:] #More labile compounds will have faster max rate of consumption
         self.k_params = np.sort(self.k_params)[self.labile_c,:] #More labile compounds will have lower saturation constant
         
-        #Assign yield coefficient according to oxidation state (logit equation)
+        #Assign yield coefficient according to oxidation state (Manzoni et al., 2012)
         self.y_params = np.zeros(self.c_n)
-        self.y_params[np.argwhere(self.recalcitrance_state<=0)] = 0.4
-        self.y_params[np.argwhere(self.recalcitrance_state>0)] = 0.4 - self.recalcitrance_state[np.argwhere(self.recalcitrance_state>0)]/4
+        self.y_params[np.argwhere(self.recalcitrance_state<=0)] = 0.6
+        self.y_params[np.argwhere(self.recalcitrance_state>0)] = 0.6 - self.recalcitrance_state[np.argwhere(self.recalcitrance_state>0)]/3
         self.y_params = np.tile(self.y_params,(self.b_n,1)).transpose()
         
     def microbe_carbon_switch (self, switch):
