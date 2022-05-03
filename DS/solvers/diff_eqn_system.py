@@ -198,7 +198,7 @@ class ReactionNetwork(object):
 
         self.v_params = switch * self.v_params
 
-    def solve_network (self, initial_conditions, time_span, time_space):
+    def solve_network (self, initial_conditions, time_span, time_space, rel_tol, abs_tol, solv_method, first_tim_step, max_tim_step):
         """Method to set up the reaction network given the 
         number of dissolved organic matter species and microbial
         species.
@@ -283,42 +283,26 @@ class ReactionNetwork(object):
             C_rate += self.c_bc
 
             # 8. rate of change of biomass species concentration
-            # Biomsdd grows and dies
+            # Biomass grows and dies
             B_rate = np.sum(b_growth, axis = 0) - b_mort
+
+            #neg_args_C = np.where(C_rate<0)
+            #neg_args_B = np.where(B_rate<0)
+            #C_rate[neg_args_C] = 0
+            #B_rate[neg_args_B] = 0
 
             rates = np.append(C_rate, B_rate, axis = 0)
 
             return rates
         
-        ### WIP
-        ## Defining boundary conditions/input conditions. This is not working right now.
-        #def boundary_conditions(x_bc0, x_bc1):
-        #    """Method to set up the boundary conditions given the 
-        #    time point and values.
-        #    
-        #    Parameter
-        #    ---------
-        #    x_bc0, x_bc1 : Array, float.
-        #        x_bc0 : Boundary conditions 1.
-        #        x_bc1 : Boundary conditions 2.
-        #    """
-        #    # Values at t=0:
-        #    x_bc0[:self.c_n] = np.ones(self.c_n)*5
-        #    x_bc0[self.c_n:] = np.ones(self.b_n)*1
-        #
-        #    # Values at t=0:
-        #    x_bc1[:self.c_n] = np.ones(self.c_n)*10
-        #    x_bc1[self.c_n:] = np.ones(self.b_n)*5
-        #
-        #    # These return values are what we want to be 0:
-        #    return [x_bc0, x_bc1]
-        ### End of WIP
-
         # solve
         #(self.initial_guess, d) = odeint (rate_expressions, initial_conditions, time_space, full_output=True)
-        self.initial_guess = solve_ivp (rate_expressions, time_span, initial_conditions, t_eval = time_space, rtol = 1e-12, atol = 1e-12)
-
-        print ("Your initial value problem is now solved.")
+        self.initial_guess = solve_ivp (rate_expressions, time_span, initial_conditions, t_eval = time_space, rtol = rel_tol, atol = abs_tol, min_step = 1e-10, first_step = first_tim_step, max_step = max_tim_step, method = solv_method)
+        
+        if self.initial_guess.status<0:
+            print ("Your initial value problem was not solved.")
+        else:
+            print ("Your initial value problem is now solved.")
         #self.answer = solve_bvp(lambda t, x: rate_expressions(t, x, self.c_n, self.b_n),
         #            lambda x_bc0, x_bc1: boundary_conditions(x_bc0, x_bc1, self.c_n, self.b_n), time_space, self.initial_guess.T)
 
