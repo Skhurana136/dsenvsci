@@ -120,6 +120,18 @@ class ReactionNetwork(object):
         self.v_params = self.parameters[-3].reshape(self.c_n, self.b_n)
         self.k_params = self.parameters[-2].reshape(self.c_n, self.b_n)
         self.m_params = self.parameters[-1]
+    
+    def adaptation (self, scaling_vector):
+
+        """Method to adapt vmax parameters according to a vector.
+
+        Parameter
+        ---------
+        scaling_vector: The input vector has to be of the same length as the number of rows in v_params.
+        """
+        scaling_vector = scaling_vector.reshape(-1,1)
+
+        self.v_params = self.v_params * (scaling_vector/np.mean(scaling_vector))
 
     def identify_components_natures(self, recalcitrance_criterion):
         """Function to categorize the components of the reaction network.
@@ -286,18 +298,13 @@ class ReactionNetwork(object):
             # Biomass grows and dies
             B_rate = np.sum(b_growth, axis = 0) - b_mort
 
-            #neg_args_C = np.where(C_rate<0)
-            #neg_args_B = np.where(B_rate<0)
-            #C_rate[neg_args_C] = 0
-            #B_rate[neg_args_B] = 0
-
             rates = np.append(C_rate, B_rate, axis = 0)
 
             return rates
         
         # solve
         #(self.initial_guess, d) = odeint (rate_expressions, initial_conditions, time_space, full_output=True)
-        self.initial_guess = solve_ivp (rate_expressions, time_span, initial_conditions, t_eval = time_space, rtol = rel_tol, atol = abs_tol, min_step = 1e-10, first_step = first_tim_step, max_step = max_tim_step, method = solv_method)
+        self.initial_guess = solve_ivp (rate_expressions, time_span, initial_conditions, t_eval = time_space, rtol = rel_tol, atol = abs_tol, min_step = 1e-6, first_step = first_tim_step, max_step = max_tim_step, method = solv_method)
         
         if self.initial_guess.status<0:
             print ("Your initial value problem was not solved.")
@@ -330,13 +337,13 @@ def generate_random_parameters(dom_n, bio_n, ratio_max_rate_mortality):
 
     # Biomass species:
     # First order rate constant for the production of exoenzymes by each microbial group
-    enzyme_prod_para = np.random.uniform(0.1, 0.4, bio_n)
+    enzyme_prod_para = abs(np.random.uniform(0.1, 0.4, bio_n))
     #Fraction of depolymerized carbon pool that is used for microbial uptake (respiration + growth).
-    efficiency_bio_uptake = np.random.normal(0.2, 0.005, bio_n*dom_n)
+    efficiency_bio_uptake = abs(np.random.normal(0.2, 0.005, bio_n*dom_n))
     # M-M max rate constant for consumption of carbon compound by a particular microbial group
-    max_rate_para = np.random.normal(0.004, 0.001, bio_n*dom_n)
+    max_rate_para = abs(np.random.normal(0.004, 0.001, bio_n*dom_n))
     # M-M half saturation constant for consumption of carbon compound by a particular microbial group
-    sat_conc_para = np.random.normal(600, 200, bio_n*dom_n)
+    sat_conc_para = abs(np.random.normal(600, 200, bio_n*dom_n))
     # Second order rate constant for quadratic mortality rate of microbial groups
     mortality_para = np.min(max_rate_para.reshape(dom_n, bio_n),axis=0)/ratio_max_rate_mortality
 
