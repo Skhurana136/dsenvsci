@@ -33,6 +33,7 @@ class ReactionNetwork(object):
         carbon_input = 0,
         sigmoid_coeff_stolpovsky = 0.1,
         necromass_distribution = "equally",
+        competition = "False",
         ):
 
         """Method to assign constants for the entire system.
@@ -58,6 +59,9 @@ class ReactionNetwork(object):
         necromass_distribution : string.
             Switch to specify if bacteria necromass distributes evenly among all carbon pools or
             "mid-labile" carbon pools. Default option is equal distribution among all carbon pools.
+        competition : string, Bool.
+            Modulate bacteria growth according to biomass based competition.
+            Default option is no competition among species.
         """
         
         self.max_cap = maximum_capacity
@@ -68,6 +72,7 @@ class ReactionNetwork(object):
         self.c_bc = carbon_input
         self.st = sigmoid_coeff_stolpovsky
         self.necromass_loop = necromass_distribution
+        self.competition = competition
         
     def set_rate_constants(self, *user_input):
         """Method to assign constants to pass to other functions.
@@ -249,6 +254,11 @@ class ReactionNetwork(object):
             # formula to implement for all B
             # r = y* rate of respiration for each B for all C
             b_growth = self.y_params * b_uptake
+
+            if self.competition == "True":
+                B_total = np.sum(B)
+                for i in list(range(self.b_n)):
+                    b_growth[i] = b_growth[i] * ((B_total-B[i])/self.max_cap)
             
             # 5. mortality
             # formula to implement for all B
