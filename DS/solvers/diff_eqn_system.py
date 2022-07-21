@@ -58,7 +58,8 @@ class ReactionNetwork(object):
             Coefficient to use in adapted sigmoid curve (see Stolpovsky et al., 2011). Can vary from 0.01 to 0.1.
         necromass_distribution : string.
             Switch to specify if bacteria necromass distributes evenly among all carbon pools or
-            "mid-labile" carbon pools. Default option is equal distribution among all carbon pools.
+            "mid-labile" carbon pools or pools whose oxidation state is between -0.3 and 0.3, or a specific
+            pool with oxidation state = -0.2. Default option is equal distribution among all carbon pools.
         competition : string, Bool.
             Modulate bacteria growth according to biomass based competition.
             Default option is no competition among species.
@@ -255,10 +256,11 @@ class ReactionNetwork(object):
             # r = y* rate of respiration for each B for all C
             b_growth = self.y_params * b_uptake
 
+            #Competition term based on Lotka-Volterra model (Vandermeer and Goldber, 2003; Fujikawa et al., 2014)
             if self.competition == "True":
                 B_total = np.sum(B)
                 for i in list(range(self.b_n)):
-                    b_growth[i] = b_growth[i] * ((B_total-B[i])/self.max_cap)
+                    b_growth[:,i] = b_growth[:,i] * (1 - (B_total-B[i])/self.max_cap)
             
             # 5. mortality
             # formula to implement for all B
@@ -288,12 +290,16 @@ class ReactionNetwork(object):
             # Add bacteria necromass to carbon pools:
             if self.necromass_loop == "equally":
                 C_rate += b_necromass/self.c_n
-            elif self.necromass_loop == "oxidation_state":
+            elif self.necromass_loop == "oxidation_state": #necromass gets added to a spectrum of carbon compounds
                 self.carbon_0 = np.where(np.abs(self.recalcitrance_state-0)<0.3)[0]
                 if self.carbon_0.size > 0:
                     C_rate[self.carbon_0] += b_necromass/(self.carbon_0.size)
                 else:
                     C_rate[self.middle_labile_group] += b_necromass/(self.middle_labile_group.size)
+            elif self.necromass_loop == "necromass_pool":
+                self.carbon_0 = np.where(np.round(self.recalcitrance_state,1)==-0.2)[0]
+                if self.carbon_0.size > 0:
+                    C_rate[self.carbon_0] += b_necromass/(self.carbon_0.size)
 
             # add sequence of addition to the simpler carbon compounds
             for labile_c, less_labile_c in zip(self.depoly_ease_c[:-1], self.depoly_ease_c[1:]):
@@ -381,7 +387,6 @@ def generate_random_initial_conditions(dom_n, bio_n, mean_dom, mean_bio, dom_tot
 
     biomass_conc = np.random.normal(mean_bio, mean_bio/10, bio_n)
     biomass_conc = biomass_conc/np.sum(biomass_conc)*bio_total
-    
 
     return dom_conc, biomass_conc
 
