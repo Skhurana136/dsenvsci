@@ -38,10 +38,10 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
         satelem = 1
     else:
         def effsat(data):
-            slope = 1/(0.8-0.2)
-            constant = -1/3
+            slope = 1/(0.8-0.2) #slope = 5/3
+            constant = -1/3 # (0-c)/(0.2-0) = slope = 5/3
             sat = slope*data + constant
-            return sat
+            return data#sat
         satiredg = effsat(df[4, 1:, yin, xright])
         satiledg = effsat(df[4, 1:, yin, xleft])
         satoredg = effsat(df[4, 1:, yout, xright])
@@ -187,13 +187,13 @@ def conc_time (numpyarray,yin,yout,xleft,xright, nodesinydirection, gvarnames,fl
                         + df[species[i]['TecIndex'], 1:, yin + 1 : yout, xright]*satrelem*velrelem)
                 ) / (edge_length * (vellelem*satlelem + velrelem*satrelem) + np.sum(element_length * velelem*satelem, axis=-1))
 
-    TotalFlow = (veliledg + veloledg + veliredg + veloredg) * edge_length + (
-        np.sum(vellelem)
-        + np.sum(velrelem)
-        + np.sum(velelem)
-        + np.sum(velielem)
-        + np.sum(veloelem)
-    ) * element_length
+    TotalFlow = np.sum((veliledg*satiledg + veloledg*satoledg + veliredg*satiredg + veloredg*satoredg) * edge_length + (
+        np.sum(vellelem*satlelem)
+        + np.sum(velrelem*satrelem)
+        + np.sum(velelem*satelem)
+        + np.sum(velielem*satielem)
+        + np.sum(veloelem*satoelem)
+    ) * element_length)
     
     Headinlettime = np.mean(df[2, 1:, yin, :], axis=-1) * -1
     
