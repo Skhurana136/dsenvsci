@@ -6,7 +6,7 @@ Created on Wed Jul  1 11:17:20 2020
 """
 import seaborn as sns
 import matplotlib.pyplot as plt
-from data_reader.data_processing import tracerstudies
+from DS.data_reader.data_processing import tracerstudies
 
 def plot_tracer(filename):
     combined_tracer = tracerstudies(filename)
