@@ -51,9 +51,7 @@ def processchemfiles(chemfile, regime):
 
 
 def tracerstudies(filename):
-    combined_tracer = pd.read_csv(filename,
-        delimiter="\t",
-    )
+    combined_tracer = pd.read_csv(filename)
     combined_tracer.loc[combined_tracer.Regime == "Equal", "Regime"] = "Medium"
     combined_tracer["fraction_withslow"] = (
         combined_tracer["Time"] / combined_tracer["Time"][0]
