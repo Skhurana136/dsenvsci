@@ -12,13 +12,13 @@ import seaborn as sns
 from datetime import datetime
 import pandas as pd
 from matplotlib.colors import LogNorm
-from analyses.steady_state import oxiccells
-from analyses.transient import (
+from DS.analyses.steady_state import oxiccells
+from DS.analyses.transient import (
     conc_time,
     biomasstimefunc,
     calcconcmasstimeX,
 )
-from data_reader.data_processing import tracerstudies
+from DS.data_reader.data_processing import tracerstudies
 import matplotlib.patches as mpatches
 import matplotlib as mpl
 
