@@ -45,17 +45,12 @@ def massflux(numpyarray, yin, yout, xleft, xright, gvarnames, flowregime, vedge,
         satoredg = 1
         satelem = 1
     else:
-        def effsat(data):
-            slope = 1/(0.8-0.2)
-            constant = -1/3
-            sat = slope*data + constant
-            return sat
-        satiredg = effsat(df[4, -1, yin, xright])
-        satiledg = effsat(df[4, -1, yin, xleft])
-        satoredg = effsat(df[4, -1, yout, xright])
-        satoledg = effsat(df[4, -1, yout, xleft])
-        satoelem = effsat(df[4, -1, yout, xleft + 1 : xright])
-        satielem = effsat(df[4, -1, yin, xleft + 1 : xright])
+        satiredg = df[4, -1, yin, xright]
+        satiledg = df[4, -1, yin, xleft]
+        satoredg = df[4, -1, yout, xright]
+        satoledg = df[4, -1, yout, xleft]
+        satoelem = df[4, -1, yout, xleft + 1 : xright]
+        satielem = df[4, -1, yin, xleft + 1 : xright]
     for i in gvarnames:
         idx = gvarnames.index(i)
         if i == "Nitrogen":
