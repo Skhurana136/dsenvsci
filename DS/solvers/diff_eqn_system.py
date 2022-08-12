@@ -247,7 +247,7 @@ class ReactionNetwork(object):
             # 2. Depolymerization of all C by exoenzymes
             c_depoly = self.v_params * C [...,None] * exoenzyme/(self.k_params + C[...,None])
             
-            # 3. Respiration
+            # 3. Uptake
             # formula to implement for all B,C combinations:
             b_uptake = self.z * c_depoly
             
@@ -262,6 +262,10 @@ class ReactionNetwork(object):
                 for i in list(range(self.b_n)):
                     b_growth[:,i] = b_growth[:,i] * (1 - (B_total-B[i])/self.max_cap)
             
+            # 4b. Respiration
+            # Respiration or carbon lost is the difference between taken up carbon and growth of microbial biomass
+            c_resp = b_uptake - b_growth
+
             # 5. mortality
             # formula to implement for all B
             # r = m*B
