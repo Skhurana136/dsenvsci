@@ -261,10 +261,6 @@ class ReactionNetwork(object):
                 B_total = np.sum(B)
                 for i in list(range(self.b_n)):
                     b_growth[:,i] = b_growth[:,i] * (1 - (B_total-B[i])/self.max_cap)
-            
-            # 4b. Respiration
-            # Respiration or carbon lost is the difference between taken up carbon and growth of microbial biomass
-            c_resp = b_uptake - b_growth
 
             # 5. mortality
             # formula to implement for all B
